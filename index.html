@@ -8,6 +8,32 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mr. Camel</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
+  <style>
+.panel {
+  padding: 0 18px;
+  background-color: white;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.2s ease-out;
+}
+</style>
+
+<script>
+  var acc = document.getElementsByClassName("accordion");
+  var i;
+  
+  for (i = 0; i < acc.length; i++) {
+    acc[i].addEventListener("click", function() {
+      this.classList.toggle("active");
+      var panel = this.nextElementSibling;
+      if (panel.style.maxHeight) {
+        panel.style.maxHeight = null;
+      } else {
+        panel.style.maxHeight = panel.scrollHeight + "px";
+      }
+    });
+  }
+</script>
 </head>
 
 <body>
@@ -62,6 +88,23 @@
         <textarea name="comments" rows="4">Enter your message</textarea><br>
         <input type="submit" value="Submit" /><br>
       </form>
+
+      <div>
+        <button class="accordion">Section 1</button>
+        <div class="panel">
+        <p>Lorem ipsum...</p>
+        </div>
+        
+        <button class="accordion">Section 2</button>
+        <div class="panel">
+          <p>Lorem ipsum...</p>
+        </div>
+        
+        <button class="accordion">Section 3</button>
+        <div class="panel">
+          <p>Lorem ipsum...</p>
+        </div>
+      </div>
 
       <img src='/download.jpg' />
     </main>
