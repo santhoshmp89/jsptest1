@@ -8,7 +8,14 @@ var ajax = [
   'https://fonts.googleapis.com/css2?family=Roboto:wght@300&display=swap'
 ];
 
-ajax.forEach((a) => {
-	fetch(a)
-  .then(x => console.log(x))
+function makeAjaxCall() {
+	ajax.forEach((a) => {
+		fetch(a)
+	  .then(x => console.log(x))
+	});
+}
+
+const button = document.getElementById('button');
+button.click(function() {
+	makeAjaxCall();	
 });
