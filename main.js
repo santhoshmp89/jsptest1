@@ -23,7 +23,7 @@ button.addEventListener('click', function() {
 
 function jsErrorFunc() {
 	console.log('function called')
-	console.log(a)
+	throw new Error('test error');
 };
 
 
