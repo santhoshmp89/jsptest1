@@ -19,3 +19,16 @@ const button = document.getElementById('button');
 button.addEventListener('click', function() {
 	makeAjaxCall();	
 });
+
+
+function jsErrorFunc() {
+	console.log('function called')
+	console.log(a)
+};
+
+
+const button1 = document.getElementById('button1');
+button1.addEventListener('click', function() {
+	jsErrorFunc();	
+});
+
