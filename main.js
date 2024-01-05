@@ -22,16 +22,26 @@ button.addEventListener('click', function() {
 
 
 function jsErrorFunc() {
-	// console.log('function called')
-	// throw new Error('test error');
-	fetch('https://jsonplaceholder.typicode.com/todos/1')
-		.then(response => response.json())
-	  .then(x => console.log(a))
+	console.log('function called')
+	throw new Error('test error');
 };
 
 
 const button1 = document.getElementById('button1');
 button1.addEventListener('click', function() {
 	jsErrorFunc();	
+});
+
+
+function promiseErrorFunc() {
+	fetch('https://jsonplaceholder.typicode.com/todos/1')
+		.then(response => response.json())
+	  .then(x => console.log(a))
+};
+
+
+const button2 = document.getElementById('button2');
+button2.addEventListener('click', function() {
+	promiseErrorFunc();	
 });
 
