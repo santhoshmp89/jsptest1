@@ -22,8 +22,11 @@ button.addEventListener('click', function() {
 
 
 function jsErrorFunc() {
-	console.log('function called')
-	throw new Error('test error');
+	// console.log('function called')
+	// throw new Error('test error');
+	fetch('https://jsonplaceholder.typicode.com/todos/1')
+		.then(response => response.json())
+	  .then(x => console.log(a))
 };
 
 
