@@ -725,7 +725,7 @@ var AjaxRequestsHandler = (function () {
 var RProfiler = (function () {
     function RProfiler() {
         var _this = this;
-        this.restUrl = "g.3gl.net/jp/8710/v3.3.10/M";
+        this.restUrl = "portalstage.catchpoint.com/jp/1826/v3.3.10/M";
         this.startTime = (new Date()).getTime();
         this.eventsTimingHandler = new EventsTimingHandler();
         this.inputDelay = new InputDelayHandler();
