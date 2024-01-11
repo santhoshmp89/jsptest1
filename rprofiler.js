@@ -1,3 +1,4 @@
+
 var generateUniqueID = function () {
     return "v2-" + Date.now() + "-" + (Math.floor(Math.random() * (9e12 - 1)) + 1e12);
 };
@@ -725,11 +726,11 @@ var AjaxRequestsHandler = (function () {
 var RProfiler = (function () {
     function RProfiler() {
         var _this = this;
-        this.restUrl = "portalstage.catchpoint.com/jp/1826/v3.3.10/M";
+        this.restUrl = "portalstage.catchpoint.com/jp/1826/v3.3.11/M";
         this.startTime = (new Date()).getTime();
         this.eventsTimingHandler = new EventsTimingHandler();
         this.inputDelay = new InputDelayHandler();
-        this.version = "v3.3.10";
+        this.version = "v3.3.11";
         this.info = {};
         this.hasInsight = false;
         this.data = {
