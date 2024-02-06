@@ -1,5 +1,5 @@
 var ajax = [
-	'https://jsonplaceholder.typicode.com/todos/1',
+	'https://jsonplaceholder.typicode.com/todosdsds/1',
   'https://jsonplaceholder.typicode.com/todos/2',
   'https://jsonplaceholder.typicode.com/todos/3',
   'https://dummyjson.com/products/1',
