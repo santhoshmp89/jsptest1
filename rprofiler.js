@@ -1,20 +1,520 @@
-/******/ (() => { // webpackBootstrap
-/******/ 	var __webpack_modules__ = ({
-
-/***/ "./src/rprofiler/AjaxRequestsHandler.ts":
-/*!**********************************************!*\
-  !*** ./src/rprofiler/AjaxRequestsHandler.ts ***!
-  \**********************************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-"use strict";
-
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
+var generateUniqueID = function () {
+    return "v2-" + Date.now() + "-" + (Math.floor(Math.random() * (9e12 - 1)) + 1e12);
 };
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-var AjaxTiming_1 = __importDefault(__webpack_require__(/*! ./AjaxTiming */ "./src/rprofiler/AjaxTiming.ts"));
-var AjaxRequestsHandler = /** @class */ (function () {
+var firstHiddenTime = -1;
+var initHiddenTime = function () {
+    return document.visibilityState === 'hidden' ? 0 : Infinity;
+};
+var trackChanges = function () {
+    onHidden(function (_a) {
+        var timeStamp = _a.timeStamp;
+        firstHiddenTime = timeStamp;
+    }, true);
+};
+var getVisibilityWatcher = function () {
+    if (firstHiddenTime < 0) {
+        if (window.__WEB_VITALS_POLYFILL__) {
+            firstHiddenTime = window.webVitals.firstHiddenTime;
+            if (firstHiddenTime === Infinity) {
+                trackChanges();
+            }
+        }
+        else {
+            firstHiddenTime = initHiddenTime();
+            trackChanges();
+        }
+        onBFCacheRestore(function () {
+            setTimeout(function () {
+                firstHiddenTime = initHiddenTime();
+                trackChanges();
+            }, 0);
+        });
+    }
+    return {
+        get firstHiddenTime() {
+            return firstHiddenTime;
+        }
+    };
+};
+var getRating = function (value, thresholds) {
+    if (value > thresholds[1]) {
+        return 'poor';
+    }
+    if (value > thresholds[0]) {
+        return 'needs-improvement';
+    }
+    return 'good';
+};
+var bindReporter = function (callback, metric, thresholds, reportAllChanges) {
+    var prevValue;
+    var delta;
+    return function (forceReport) {
+        if (metric.value >= 0) {
+            if (forceReport || reportAllChanges) {
+                delta = metric.value - (prevValue || 0);
+                if (delta || prevValue === undefined) {
+                    prevValue = metric.value;
+                    metric.delta = delta;
+                    metric.rating = getRating(metric.value, thresholds);
+                    callback(metric);
+                }
+            }
+        }
+    };
+};
+var onHidden = function (cb, once) {
+    var onHiddenOrPageHide = function (event) {
+        if (event.type === 'pagehide' || document.visibilityState === 'hidden') {
+            cb(event);
+            if (once) {
+                removeEventListener('visibilitychange', onHiddenOrPageHide, true);
+                removeEventListener('pagehide', onHiddenOrPageHide, true);
+            }
+        }
+    };
+    addEventListener('visibilitychange', onHiddenOrPageHide, true);
+    addEventListener('pagehide', onHiddenOrPageHide, true);
+};
+var observe = function (type, callback, opts) {
+    try {
+        if (PerformanceObserver.supportedEntryTypes.includes(type)) {
+            var po_1 = new PerformanceObserver(function (list) {
+                Promise.resolve().then(function () {
+                    callback(list.getEntries());
+                });
+            });
+            po_1.observe(Object.assign({
+                type: type,
+                buffered: true,
+            }, opts || {}));
+            return po_1;
+        }
+    }
+    catch (e) {
+    }
+    return;
+};
+var doubleRAF = function (cb) {
+    requestAnimationFrame(function () { return requestAnimationFrame(function () { return cb(); }); });
+};
+var FCPThresholds = [1800, 3000];
+var getFCP = function (onReport, reportAllChanges) {
+    whenActivated(function () {
+        var visibilityWatcher = getVisibilityWatcher();
+        var metric = initMetric('FCP');
+        var report;
+        var handleEntries = function (entries) {
+            entries.forEach(function (entry) {
+                if (entry.name === 'first-contentful-paint') {
+                    po.disconnect();
+                    if (entry.startTime < visibilityWatcher.firstHiddenTime) {
+                        metric.value = Math.max(entry.startTime - getActivationStart(), 0);
+                        metric.entries.push(entry);
+                        report(true);
+                    }
+                }
+            });
+        };
+        var po = observe('paint', handleEntries);
+        if (po) {
+            report = bindReporter(onReport, metric, FCPThresholds, reportAllChanges);
+            onBFCacheRestore(function (event) {
+                metric = initMetric('FCP');
+                report = bindReporter(onReport, metric, FCPThresholds, reportAllChanges);
+                doubleRAF(function () {
+                    metric.value = performance.now() - event.timeStamp;
+                    report(true);
+                });
+            });
+        }
+    });
+};
+var getNavigationEntryFromPerformanceTiming = function () {
+    var timing = performance.timing;
+    var type = performance.navigation.type;
+    var navigationEntry = {
+        entryType: 'navigation',
+        startTime: 0,
+        type: type == 2 ? 'back_forward' : type === 1 ? 'reload' : 'navigate',
+    };
+    for (var key in timing) {
+        if (key !== 'navigationStart' && key !== 'toJSON') {
+            navigationEntry[key] = Math.max(timing[key] -
+                timing.navigationStart, 0);
+        }
+    }
+    return navigationEntry;
+};
+var getNavigationEntry = function () {
+    if (window.__WEB_VITALS_POLYFILL__) {
+        return (window.performance &&
+            ((performance.getEntriesByType &&
+                performance.getEntriesByType('navigation')[0]) ||
+                getNavigationEntryFromPerformanceTiming()));
+    }
+    else {
+        return (window.performance &&
+            performance.getEntriesByType &&
+            performance.getEntriesByType('navigation')[0]);
+    }
+};
+var bfcacheRestoreTime = -1;
+var getBFCacheRestoreTime = function () { return bfcacheRestoreTime; };
+var onBFCacheRestore = function (cb) {
+    addEventListener('pageshow', function (event) {
+        if (event.persisted) {
+            bfcacheRestoreTime = event.timeStamp;
+            cb(event);
+        }
+    }, true);
+};
+var getActivationStart = function () {
+    var navEntry = getNavigationEntry();
+    return (navEntry && navEntry.activationStart) || 0;
+};
+var initMetric = function (name, value) {
+    var navEntry = getNavigationEntry();
+    var navigationType = 'navigate';
+    if (getBFCacheRestoreTime() >= 0) {
+        navigationType = 'back-forward-cache';
+    }
+    else if (navEntry) {
+        if (document.prerendering || getActivationStart() > 0) {
+            navigationType = 'prerender';
+        }
+        else if (document.wasDiscarded) {
+            navigationType = 'restore';
+        }
+        else if (navEntry.type) {
+            navigationType = navEntry.type.replace(/_/g, '-');
+        }
+    }
+    return {
+        name: name,
+        value: typeof value === 'undefined' ? -1 : value,
+        rating: 'good',
+        delta: 0,
+        entries: [],
+        id: generateUniqueID(),
+        navigationType: navigationType,
+    };
+};
+var reportedMetricIDs = {};
+var LCPThresholds = [2500, 4000];
+var getLCP = function (onReport, reportAllChanges) {
+    whenActivated(function () {
+        var visibilityWatcher = getVisibilityWatcher();
+        var metric = initMetric('LCP');
+        var report;
+        var handleEntries = function (entries) {
+            var lastEntry = entries[entries.length - 1];
+            if (lastEntry) {
+                if (lastEntry.startTime < visibilityWatcher.firstHiddenTime) {
+                    metric.value = Math.max(lastEntry.startTime - getActivationStart(), 0);
+                    metric.entries = [lastEntry];
+                    report(false);
+                }
+            }
+        };
+        var po = observe('largest-contentful-paint', handleEntries);
+        if (po) {
+            report = bindReporter(onReport, metric, LCPThresholds, reportAllChanges);
+            var stopListening_1 = runOnce(function () {
+                if (!reportedMetricIDs[metric.id]) {
+                    handleEntries(po.takeRecords());
+                    po.disconnect();
+                    reportedMetricIDs[metric.id] = true;
+                    report(true);
+                }
+            });
+            ['keydown', 'click'].forEach(function (type) {
+                addEventListener(type, stopListening_1, true);
+            });
+            onHidden(stopListening_1);
+            onBFCacheRestore(function (event) {
+                metric = initMetric('LCP');
+                report = bindReporter(onReport, metric, LCPThresholds, reportAllChanges);
+                doubleRAF(function () {
+                    metric.value = performance.now() - event.timeStamp;
+                    reportedMetricIDs[metric.id] = true;
+                    report(true);
+                });
+            });
+        }
+    });
+};
+var runOnce = function (cb) {
+    var called = false;
+    return function (arg) {
+        if (!called) {
+            cb(arg);
+            called = true;
+        }
+    };
+};
+var CLSThresholds = [0.1, 0.25];
+var getCLS = function (onReport, reportAllChanges) {
+    getFCP(runOnce(function () {
+        var metric = initMetric('CLS', 0);
+        var report;
+        var sessionValue = 0;
+        var sessionEntries = [];
+        var handleEntries = function (entries) {
+            entries.forEach(function (entry) {
+                if (!entry.hadRecentInput) {
+                    var firstSessionEntry = sessionEntries[0];
+                    var lastSessionEntry = sessionEntries[sessionEntries.length - 1];
+                    if (sessionValue &&
+                        entry.startTime - lastSessionEntry.startTime < 1000 &&
+                        entry.startTime - firstSessionEntry.startTime < 5000) {
+                        sessionValue += entry.value;
+                        sessionEntries.push(entry);
+                    }
+                    else {
+                        sessionValue = entry.value;
+                        sessionEntries = [entry];
+                    }
+                }
+            });
+            if (sessionValue > metric.value) {
+                metric.value = sessionValue;
+                metric.entries = sessionEntries;
+                report(true);
+            }
+        };
+        var po = observe('layout-shift', handleEntries);
+        if (po) {
+            report = bindReporter(onReport, metric, CLSThresholds, reportAllChanges);
+            onHidden(function () {
+                handleEntries(po.takeRecords());
+                report(true);
+            });
+            onBFCacheRestore(function () {
+                sessionValue = 0;
+                metric = initMetric('CLS', 0);
+                report = bindReporter(onReport, metric, CLSThresholds, reportAllChanges);
+                doubleRAF(function () { return report(); });
+            });
+            setTimeout(report, 0);
+        }
+    }));
+};
+var whenActivated = function (callback) {
+    if (document.prerendering) {
+        addEventListener('prerenderingchange', function () { return callback(); }, true);
+    }
+    else {
+        callback();
+    }
+};
+var interactionCountEstimate = 0;
+var minKnownInteractionId = Infinity;
+var maxKnownInteractionId = 0;
+var updateEstimate = function (entries) {
+    entries.forEach(function (e) {
+        if (e.interactionId) {
+            minKnownInteractionId = Math.min(minKnownInteractionId, e.interactionId);
+            maxKnownInteractionId = Math.max(maxKnownInteractionId, e.interactionId);
+            interactionCountEstimate = maxKnownInteractionId
+                ? (maxKnownInteractionId - minKnownInteractionId) / 7 + 1
+                : 0;
+        }
+    });
+};
+var po;
+var getInteractionCount = function () {
+    return po ? interactionCountEstimate : performance.interactionCount || 0;
+};
+var initInteractionCountPolyfill = function () {
+    if ('interactionCount' in performance || po)
+        return;
+    po = observe('event', updateEstimate, {
+        type: 'event',
+        buffered: true,
+        durationThreshold: 0,
+    });
+};
+var INPThresholds = [200, 500];
+var prevInteractionCount = 0;
+var getInteractionCountForNavigation = function () {
+    return getInteractionCount() - prevInteractionCount;
+};
+var MAX_INTERACTIONS_TO_CONSIDER = 10;
+var longestInteractionList = [];
+var longestInteractionMap = {};
+var processEntry = function (entry) {
+    var minLongestInteraction = longestInteractionList[longestInteractionList.length - 1];
+    var existingInteraction = longestInteractionMap[entry.interactionId];
+    if (existingInteraction ||
+        longestInteractionList.length < MAX_INTERACTIONS_TO_CONSIDER ||
+        entry.duration > minLongestInteraction.latency) {
+        if (existingInteraction) {
+            existingInteraction.entries.push(entry);
+            existingInteraction.latency = Math.max(existingInteraction.latency, entry.duration);
+        }
+        else {
+            var interaction = {
+                id: entry.interactionId,
+                latency: entry.duration,
+                entries: [entry],
+            };
+            longestInteractionMap[interaction.id] = interaction;
+            longestInteractionList.push(interaction);
+        }
+        longestInteractionList.sort(function (a, b) { return b.latency - a.latency; });
+        longestInteractionList.splice(MAX_INTERACTIONS_TO_CONSIDER).forEach(function (i) {
+            delete longestInteractionMap[i.id];
+        });
+    }
+};
+var estimateP98LongestInteraction = function () {
+    var candidateInteractionIndex = Math.min(longestInteractionList.length - 1, Math.floor(getInteractionCountForNavigation() / 50));
+    return longestInteractionList[candidateInteractionIndex];
+};
+var getINP = function (onReport, opts) {
+    opts = opts || {};
+    whenActivated(function () {
+        initInteractionCountPolyfill();
+        var metric = initMetric('INP');
+        var report;
+        var handleEntries = function (entries) {
+            entries.forEach(function (entry) {
+                if (entry.interactionId) {
+                    processEntry(entry);
+                }
+                if (entry.entryType === 'first-input') {
+                    var noMatchingEntry = !longestInteractionList.some(function (interaction) {
+                        return interaction.entries.some(function (prevEntry) {
+                            return (entry.duration === prevEntry.duration &&
+                                entry.startTime === prevEntry.startTime);
+                        });
+                    });
+                    if (noMatchingEntry) {
+                        processEntry(entry);
+                    }
+                }
+            });
+            var inp = estimateP98LongestInteraction();
+            if (inp && inp.latency !== metric.value) {
+                metric.value = inp.latency;
+                metric.entries = inp.entries;
+                report(true);
+            }
+        };
+        var po = observe('event', handleEntries, {
+            durationThreshold: opts.durationThreshold || 40,
+        });
+        report = bindReporter(onReport, metric, INPThresholds, opts.reportAllChanges);
+        if (po) {
+            if ('interactionId' in PerformanceEventTiming.prototype) {
+                po.observe({ type: 'first-input', buffered: true });
+            }
+            onHidden(function () {
+                handleEntries(po.takeRecords());
+                if (metric.value < 0 && getInteractionCountForNavigation() > 0) {
+                    metric.value = 0;
+                    metric.entries = [];
+                }
+                report(true);
+            });
+            onBFCacheRestore(function () {
+                longestInteractionList = [];
+                prevInteractionCount = getInteractionCount();
+                metric = initMetric('INP');
+                report = bindReporter(onReport, metric, INPThresholds, opts.reportAllChanges);
+            });
+        }
+    });
+};
+var windowCurrent = parent.window || window;
+var WindowEvent;
+(function (WindowEvent) {
+    WindowEvent["Load"] = "load";
+    WindowEvent["BeforeUnload"] = "beforeunload";
+    WindowEvent["Abort"] = "abort";
+    WindowEvent["Error"] = "error";
+    WindowEvent["Unload"] = "unload";
+})(WindowEvent || (WindowEvent = {}));
+var VisibilityType;
+(function (VisibilityType) {
+    VisibilityType[VisibilityType["Focus"] = 0] = "Focus";
+    VisibilityType[VisibilityType["Blur"] = 1] = "Blur";
+})(VisibilityType || (VisibilityType = {}));
+;
+var AjaxTiming = (function () {
+    function AjaxTiming(url, method, isAsync, open) {
+        var _this = this;
+        this.getPerformanceTimings = function (entry) {
+            _this.connect = entry.connectEnd - entry.connectStart;
+            _this.dns = entry.domainLookupEnd - entry.domainLookupStart;
+            _this.duration = entry.duration;
+            _this.load = entry.responseEnd - entry.responseStart;
+            _this.wait = entry.responseStart - entry.requestStart;
+            _this.start = entry.startTime;
+            _this.redirect = entry.redirectEnd - entry.redirectStart;
+            if (entry["secureConnectionStart"]) {
+                _this.ssl = entry.connectEnd - entry["secureConnectionStart"];
+            }
+        };
+        this.url = url;
+        this.method = method;
+        this.isAsync = isAsync;
+        this.open = open;
+    }
+    return AjaxTiming;
+}());
+var ProfilerJsError = (function () {
+    function ProfilerJsError(message, url, lineNumber) {
+        this.count = 0;
+        this.message = message;
+        this.url = url;
+        this.lineNumber = lineNumber;
+    }
+    ProfilerJsError.createText = function (msg, url, num) {
+        return [msg, url, num].join(":");
+    };
+    ProfilerJsError.prototype.getText = function () {
+        return ProfilerJsError.createText(this.message, this.url, this.lineNumber);
+    };
+    return ProfilerJsError;
+}());
+var ProfilerEventManager = (function () {
+    function ProfilerEventManager() {
+        this.events = [];
+        this.hasAttachEvent = !!window.attachEvent;
+    }
+    ProfilerEventManager.prototype.add = function (type, target, func) {
+        this.events.push({ type: type, target: target, func: func });
+        if (this.hasAttachEvent) {
+            target.attachEvent("on" + type, func);
+        }
+        else {
+            target.addEventListener(type, func, false);
+        }
+    };
+    ProfilerEventManager.prototype.remove = function (type, target, func) {
+        if (this.hasAttachEvent) {
+            target.detachEvent(type, func);
+        }
+        else {
+            target.removeEventListener(type, func, false);
+        }
+        var index = this.events.indexOf({ type: type, target: target, func: func });
+        if (index !== 1) {
+            this.events.splice(index, 1);
+        }
+    };
+    ProfilerEventManager.prototype.clear = function () {
+        var events = this.events;
+        for (var i = 0; i < events.length; i++) {
+            var ev = events[i];
+            this.remove(ev.type, ev.target, ev.func);
+        }
+        this.events = [];
+    };
+    return ProfilerEventManager;
+}());
+var AjaxRequestsHandler = (function () {
     function AjaxRequestsHandler() {
         var _this = this;
         this.fetchRequests = [];
@@ -28,15 +528,11 @@ var AjaxRequestsHandler = /** @class */ (function () {
                 return error;
             };
             var onResponseError = function (error) {
-                // @ts-ignore
                 return Promise.reject(error);
             };
             if (!window.fetch) {
                 return;
             }
-            /*TODO: Adding ignore to resolve the error
-            Need to relook on ts error. After adding latest vesion in tsconfig lib, It's unable to get the fetch type.*/
-            // @ts-ignore
             window.fetch = (function (fetch) {
                 return function () {
                     var args = [];
@@ -44,9 +540,6 @@ var AjaxRequestsHandler = /** @class */ (function () {
                         args[_i] = arguments[_i];
                     }
                     var fetchRequestIndex = 0;
-                    /*TODO: Adding ignore to resolve the error
-                    Need to relook on ts error. After adding latest vesion in tsconfig lib, It's unable to get the promise type.*/
-                    // @ts-ignore
                     var promise = Promise.resolve(args);
                     promise = promise.then(function (args) {
                         var firstArg;
@@ -66,7 +559,6 @@ var AjaxRequestsHandler = /** @class */ (function () {
                         }
                         fetchRequestIndex = tempArray.length;
                         var fetchUrl = '';
-                        //The first argument can be either a url or Request object
                         if (typeof (firstArg) === 'object' && !!firstArg) {
                             if (Array.isArray(firstArg) && firstArg.length > 0) {
                                 fetchUrl = firstArg[0];
@@ -79,11 +571,10 @@ var AjaxRequestsHandler = /** @class */ (function () {
                             fetchUrl = firstArg;
                         }
                         if (fetchUrl) {
-                            tempArray.push(new AjaxTiming_1.default(fetchUrl, method, true, ajaxHandler.now()));
+                            tempArray.push(new AjaxTiming(fetchUrl, method, true, ajaxHandler.now()));
                         }
                         return [firstArg, config];
                     }, onRequestError);
-                    // @ts-ignore
                     promise = promise.then(function (args) { return fetch.apply(void 0, args); });
                     promise = promise.then(function (response) {
                         var fetchRequest = tempArray[fetchRequestIndex];
@@ -146,7 +637,7 @@ var AjaxRequestsHandler = /** @class */ (function () {
                 u.push(index);
                 return;
             }
-            fetchRequest.getPerformanceTimings(matches[0]); // if we can't find it, just use the first entry
+            fetchRequest.getPerformanceTimings(matches[0]);
         }, ajaxHandler.compareEntriesDelay);
     };
     AjaxRequestsHandler.startAjaxCapture = function (ajaxHandler) {
@@ -157,10 +648,9 @@ var AjaxRequestsHandler = /** @class */ (function () {
         if (ajaxHandler.hasPerformance && typeof window.performance.setResourceTimingBufferSize === "function") {
             window.performance.setResourceTimingBufferSize(300);
         }
-        // @ts-ignore
         xhr.open = function (method, url, async, user, password) {
             this.rpIndex = tempArray.length;
-            tempArray.push(new AjaxTiming_1.default(url, method, async, ajaxHandler.now()));
+            tempArray.push(new AjaxTiming(url, method, async, ajaxHandler.now()));
             open.call(this, method, url, (async === false) ? false : true, user, password);
         };
         xhr.send = function (data) {
@@ -232,66 +722,292 @@ var AjaxRequestsHandler = /** @class */ (function () {
     };
     return AjaxRequestsHandler;
 }());
-exports["default"] = AjaxRequestsHandler;
-
-
-/***/ }),
-
-/***/ "./src/rprofiler/AjaxTiming.ts":
-/*!*************************************!*\
-  !*** ./src/rprofiler/AjaxTiming.ts ***!
-  \*************************************/
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-var AjaxTiming = /** @class */ (function () {
-    function AjaxTiming(url, method, isAsync, open) {
+var RProfiler = (function () {
+    function RProfiler() {
         var _this = this;
-        this.getPerformanceTimings = function (entry) {
-            // If a call is being made on same url multiple time, take the first one so that we capture dns and ssl time
-            _this.connect = entry.connectEnd - entry.connectStart;
-            _this.dns = entry.domainLookupEnd - entry.domainLookupStart;
-            _this.duration = entry.duration;
-            _this.load = entry.responseEnd - entry.responseStart;
-            _this.wait = entry.responseStart - entry.requestStart;
-            _this.start = entry.startTime;
-            _this.redirect = entry.redirectEnd - entry.redirectStart;
-            if (entry["secureConnectionStart"]) {
-                _this.ssl = entry.connectEnd - entry["secureConnectionStart"];
+        this.restUrl = "portalstage.catchpoint.com/jp/1826/v3.3.11/M";
+        this.startTime = (new Date()).getTime();
+        this.eventsTimingHandler = new EventsTimingHandler();
+        this.inputDelay = new InputDelayHandler();
+        this.version = "v3.3.11";
+        this.info = {};
+        this.hasInsight = false;
+        this.data = {
+            start: this.startTime,
+            jsCount: 0,
+            jsErrors: [],
+            loadTime: -1,
+            loadFired: window.document.readyState == "complete",
+        };
+        this.eventManager = new ProfilerEventManager();
+        this.setCLS = function (_a) {
+            var metricName = _a.name, metricValue = _a.delta;
+            var CLS = metricName === 'CLS' ? metricValue : undefined;
+            _this.cls = CLS;
+        };
+        this.setLCP = function (_a) {
+            var metricName = _a.name, metricValue = _a.delta;
+            var LCP = metricName === 'LCP' ? metricValue : undefined;
+            _this.lcp = LCP;
+        };
+        this.setINP = function (_a) {
+            var metricName = _a.name, metricValue = _a.value;
+            var INP = metricName === 'INP' ? metricValue : undefined;
+            _this.inp = INP;
+        };
+        this.recordPageLoad = function () {
+            _this.data.loadTime = (new Date()).getTime();
+            _this.data.loadFired = true;
+        };
+        this.addError = function (msg, url, lineNum) {
+            _this.data.jsCount++;
+            var currError = ProfilerJsError.createText(msg, url, lineNum);
+            var errorArr = _this.data.jsErrors;
+            for (var _i = 0, errorArr_1 = errorArr; _i < errorArr_1.length; _i++) {
+                var err = errorArr_1[_i];
+                if (err.getText() == currError) {
+                    err.count++;
+                    return;
+                }
+            }
+            errorArr.push(new ProfilerJsError(msg, url, lineNum));
+        };
+        this.getAjaxRequests = function () {
+            return _this.ajaxHandler.getAjaxRequests();
+        };
+        this.clearAjaxRequests = function () {
+            _this.ajaxHandler.clear();
+        };
+        this.addInfo = function (infoType, key, value) {
+            if (_this.isNullOrEmpty(infoType)) {
+                return;
+            }
+            if (_this.isNullOrEmpty(value)) {
+                _this.info[infoType] = key;
+            }
+            else {
+                if (_this.isNullOrEmpty(key)) {
+                    return;
+                }
+                if (_this.isNullOrEmpty(_this.info[infoType])) {
+                    _this.info[infoType] = {};
+                }
+                _this.info[infoType][key] = value;
+            }
+            _this.hasInsight = true;
+        };
+        this.clearInfo = function () {
+            _this.info = {};
+            _this.hasInsight = false;
+        };
+        this.clearErrors = function () {
+            _this.data.jsCount = 0;
+            _this.data.jsErrors = [];
+        };
+        this.getInfo = function () {
+            if (!_this.hasInsight) {
+                return null;
+            }
+            return _this.info;
+        };
+        this.getEventTimingHandler = function () {
+            return _this.eventsTimingHandler;
+        };
+        this.getInputDelay = function () {
+            return _this.inputDelay;
+        };
+        this.getCPWebVitals = function () {
+            getCLS(_this.setCLS, false);
+            getLCP(_this.setLCP, false);
+            getINP(_this.setINP, { reportAllChanges: false });
+            return {
+                cls: _this.cls,
+                lcp: _this.lcp,
+                inp: _this.inp
+            };
+        };
+        this.attachIframe = function () {
+            var protocol = window.location.protocol;
+            var iframe = document.createElement("iframe");
+            iframe.src = "about:blank";
+            var style = iframe.style;
+            style.position = "absolute";
+            style.top = "-10000px";
+            style.left = "-1000px";
+            iframe.addEventListener('load', function (event) {
+                var frame = event.currentTarget;
+                if (frame && frame.contentDocument) {
+                    var iframeDocument = frame.contentDocument;
+                    var rumScript = iframeDocument.createElement('script');
+                    rumScript.type = 'text/javascript';
+                    rumScript.src = protocol + '//' + _this.restUrl;
+                    iframeDocument.body.appendChild(rumScript);
+                }
+            });
+            if (document.body) {
+                document.body.insertAdjacentElement('afterbegin', iframe);
             }
         };
-        this.url = url;
-        this.method = method;
-        this.isAsync = isAsync;
-        this.open = open;
+        this.eventManager.add(WindowEvent.Load, window, this.recordPageLoad);
+        var errorFunc = this.addError;
+        this.ajaxHandler = new AjaxRequestsHandler();
+        getCLS(this.setCLS, false);
+        getLCP(this.setLCP, false);
+        getINP(this.setINP, { reportAllChanges: false });
+        function recordJsError(e) {
+            var ev = e.target || e.srcElement;
+            if (ev.nodeType == 3) {
+                ev = ev.parentNode;
+            }
+            errorFunc("N/A", ev.src || ev.URL, -1);
+            return false;
+        }
+        if (!!window["opera"]) {
+            this.eventManager.add(WindowEvent.Error, document, recordJsError);
+        }
+        else if ("onerror" in window) {
+            var origOnError = window.onerror;
+            window.onerror = function (msg, url, lineNum) {
+                errorFunc(msg, url, lineNum);
+                if (!!origOnError) {
+                    return origOnError(msg, url, lineNum);
+                }
+                return false;
+            };
+        }
+        if ("onunhandledrejection" in window) {
+            window.onunhandledrejection = function (errorEvent) {
+                var _a, _b, _c;
+                var fullMessage = (_a = errorEvent.reason.stack) !== null && _a !== void 0 ? _a : "";
+                var errorMsg = fullMessage !== "" ? fullMessage.split("at") : [];
+                var fileUrl = errorMsg[1] ? errorMsg[1].replace(/:\d+/g, "") : "";
+                var errorLineNumbers = errorMsg[1] ? errorMsg[1].match(/:\d+/g) : [];
+                var lineNum = errorLineNumbers[0] ? errorLineNumbers[0].replace(":", "") : 0;
+                errorFunc((_c = (_b = errorMsg[0]) === null || _b === void 0 ? void 0 : _b.trim()) !== null && _c !== void 0 ? _c : "N/A", fileUrl.trim(), lineNum);
+            };
+        }
+        if (!!window["__cpCdnPath"]) {
+            this.restUrl = window["__cpCdnPath"].trim();
+        }
     }
-    return AjaxTiming;
+    RProfiler.prototype.isNullOrEmpty = function (val) {
+        if (val === undefined || val === null) {
+            return true;
+        }
+        if (typeof val == "string") {
+            var str = val;
+            return str.trim().length == 0;
+        }
+        return false;
+    };
+    RProfiler.prototype.dispatchCustomEvent = function (event) {
+        (function (w) {
+            if (typeof w.CustomEvent === "function") {
+                return false;
+            }
+            function CustomEvent(event, params) {
+                params = params || { bubbles: false, cancelable: false, detail: undefined };
+                var evt = document.createEvent('CustomEvent');
+                evt.initCustomEvent(event, params.bubbles, params.cancelable, params.detail);
+                return evt;
+            }
+            CustomEvent.prototype = Event.prototype;
+            w.CustomEvent = CustomEvent;
+        })(window);
+        var e = new CustomEvent(event);
+        window.dispatchEvent(e);
+    };
+    return RProfiler;
 }());
-exports["default"] = AjaxTiming;
-
-
-/***/ }),
-
-/***/ "./src/rprofiler/EventsTimingHandler.ts":
-/*!**********************************************!*\
-  !*** ./src/rprofiler/EventsTimingHandler.ts ***!
-  \**********************************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-"use strict";
-
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-var types_1 = __webpack_require__(/*! ../types */ "./src/types.ts");
-var ProfilerEventManager_1 = __importDefault(__webpack_require__(/*! ./ProfilerEventManager */ "./src/rprofiler/ProfilerEventManager.ts"));
-var EventsTimingHandler = /** @class */ (function () {
+var InputDelayHandler = (function () {
+    function InputDelayHandler() {
+        var _this = this;
+        this.firstInputDelay = 0;
+        this.firstInputTimeStamp = 0;
+        this.startTime = 0;
+        this.delay = 0;
+        this.profileManager = new ProfilerEventManager();
+        this.eventTypes = [
+            'click',
+            'mousedown',
+            'keydown',
+            'touchstart',
+            'pointerdown',
+        ];
+        this.addEventListeners = function () {
+            _this.eventTypes.forEach(function (event) {
+                _this.profileManager.add(event, document, _this.onInput);
+            });
+        };
+        this.now = function () {
+            return (new Date()).getTime();
+        };
+        this.removeEventListeners = function () {
+            _this.eventTypes.forEach(function (event) {
+                _this.profileManager.remove(event, document, _this.onInput);
+            });
+        };
+        this.onInput = function (evt) {
+            if (!evt.cancelable) {
+                return;
+            }
+            var isEpochTime = evt.timeStamp > 1e12;
+            _this.firstInputTimeStamp = _this.now();
+            var useFirstInputTime = isEpochTime || !window['performance'];
+            var now = useFirstInputTime ? _this.firstInputTimeStamp : window['performance'].now();
+            _this.delay = now - evt.timeStamp;
+            if (evt.type == 'pointerdown') {
+                _this.onPointerDown();
+            }
+            else {
+                _this.removeEventListeners();
+                _this.updateFirstInputDelay();
+            }
+        };
+        this.onPointerUp = function () {
+            _this.removeEventListeners();
+            _this.updateFirstInputDelay();
+        };
+        this.onPointerCancel = function () {
+            _this.removePointerEventListeners();
+        };
+        this.removePointerEventListeners = function () {
+            _this.profileManager.remove('pointerup', document, _this.onPointerUp);
+            _this.profileManager.remove('pointercancel', document, _this.onPointerCancel);
+        };
+        this.updateFirstInputDelay = function () {
+            if (_this.delay >= 0 && _this.delay < (_this.firstInputTimeStamp - _this.startTime)) {
+                _this.firstInputDelay = Math.round(_this.delay);
+            }
+        };
+        this.startSoftNavigationCapture = function () {
+            _this.resetSoftNavigationCapture();
+        };
+        this.resetSoftNavigationCapture = function () {
+            _this.resetFirstInputDelay();
+            _this.addEventListeners();
+        };
+        this.resetFirstInputDelay = function () {
+            _this.delay = 0;
+            _this.firstInputDelay = 0;
+            _this.startTime = 0;
+            _this.firstInputTimeStamp = 0;
+        };
+        this.startTime = this.now();
+        this.addEventListeners();
+    }
+    InputDelayHandler.prototype.onPointerDown = function () {
+        this.profileManager.add('pointerup', document, this.onPointerUp);
+        this.profileManager.add('pointercancel', document, this.onPointerCancel);
+    };
+    InputDelayHandler.prototype.getFirstInputDelay = function () {
+        return this.firstInputDelay;
+    };
+    return InputDelayHandler;
+}());
+var EventsTimingHandler = (function () {
     function EventsTimingHandler() {
         var _this = this;
-        //Capture window Focus (Used for Page On Time)
         this.hiddenStrings = ['hidden', 'msHidden', 'webkitHidden', 'mozHidden'];
         this.visibilityStrings = [
             'visibilitychange',
@@ -299,13 +1015,11 @@ var EventsTimingHandler = /** @class */ (function () {
             'webkitvisibilitychange',
             'mozvisibilitychange'
         ];
-        // @ts-ignore
         this.captureSoftNavigation = false;
         this.hidden = 'hidden';
         this.visibilityChange = 'visibilitychange';
         this.visibilityEvents = [];
-        // Capture scroll, focus, resize, mouse and keyEvents
-        this.eventManager = new ProfilerEventManager_1.default();
+        this.eventManager = new ProfilerEventManager();
         this.engagementTimeIntervalMs = 1000;
         this.engagementTime = 0;
         this.firstEngagementTime = 0;
@@ -315,7 +1029,6 @@ var EventsTimingHandler = /** @class */ (function () {
         this.now = function () {
             return (new Date()).getTime();
         };
-        // @ts-ignore
         this.startVisibilityCapture = function () {
             _this.initializeVisibilityProperties();
             document.addEventListener(_this.visibilityChange, _this.captureFocusEvent, false);
@@ -339,17 +1052,17 @@ var EventsTimingHandler = /** @class */ (function () {
         };
         this.updateVisibilityChangeTime = function () {
             if (document[_this.hidden]) {
-                _this.captureVisibilityEvent(types_1.VisibilityType.Blur);
+                _this.captureVisibilityEvent(VisibilityType.Blur);
             }
             else {
-                _this.captureVisibilityEvent(types_1.VisibilityType.Focus);
+                _this.captureVisibilityEvent(VisibilityType.Focus);
             }
         };
         this.onBlur = function () {
-            _this.captureVisibilityEvent(types_1.VisibilityType.Blur);
+            _this.captureVisibilityEvent(VisibilityType.Blur);
         };
         this.onFocus = function () {
-            _this.captureVisibilityEvent(types_1.VisibilityType.Focus);
+            _this.captureVisibilityEvent(VisibilityType.Focus);
         };
         this.captureVisibilityEvent = function (type) {
             _this.visibilityEvents.push({
@@ -359,7 +1072,6 @@ var EventsTimingHandler = /** @class */ (function () {
         };
         this.captureEngagementTime = function (isFirstEngagement) {
             if (isFirstEngagement === void 0) { isFirstEngagement = true; }
-            // 1000 ms for default focus
             if (!_this.lastEventTimeStamp) {
                 _this.engagementTime = _this.engagementTimeIntervalMs;
                 _this.lastEventTimeStamp = _this.now();
@@ -377,12 +1089,11 @@ var EventsTimingHandler = /** @class */ (function () {
             }
             _this.startTimer();
         };
-        //Do not include mousemove for first engagement, as it doesn't really indicate engagement if use just moved mouse to close the page
         this.captureMouseMove = function () {
             _this.captureEngagementTime(false);
         };
         this.startTimer = function () {
-            _this.timeoutId = window.setTimeout(function () {
+            _this.timeoutId = setTimeout(function () {
                 _this.engagementTime += _this.engagementTimeIntervalMs;
             }, _this.engagementTimeIntervalMs);
         };
@@ -397,12 +1108,12 @@ var EventsTimingHandler = /** @class */ (function () {
             var currentFocusIndex = resetIndex;
             var hiddenTimeLapsed = 0;
             while (index < events.length) {
-                if (events[index].type === types_1.VisibilityType.Blur &&
+                if (events[index].type === VisibilityType.Blur &&
                     currentBlurIndex === resetIndex) {
                     currentBlurIndex = index;
                 }
                 var isNewFocusEvent = currentFocusIndex === resetIndex && currentBlurIndex !== resetIndex;
-                if (events[index].type === types_1.VisibilityType.Focus && isNewFocusEvent) {
+                if (events[index].type === VisibilityType.Focus && isNewFocusEvent) {
                     currentFocusIndex = index;
                 }
                 var validFocusChange = currentBlurIndex !== resetIndex && currentFocusIndex !== resetIndex;
@@ -458,425 +1169,9 @@ var EventsTimingHandler = /** @class */ (function () {
     }
     return EventsTimingHandler;
 }());
-exports["default"] = EventsTimingHandler;
-
-
-/***/ }),
-
-/***/ "./src/rprofiler/InputDelayHandler.ts":
-/*!********************************************!*\
-  !*** ./src/rprofiler/InputDelayHandler.ts ***!
-  \********************************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-"use strict";
-
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-var ProfilerEventManager_1 = __importDefault(__webpack_require__(/*! ./ProfilerEventManager */ "./src/rprofiler/ProfilerEventManager.ts"));
-var InputDelayHandler = /** @class */ (function () {
-    function InputDelayHandler() {
-        var _this = this;
-        this.firstInputDelay = 0;
-        this.firstInputTimeStamp = 0;
-        this.startTime = 0;
-        this.delay = 0;
-        this.profileManager = new ProfilerEventManager_1.default();
-        this.eventTypes = [
-            'click',
-            'mousedown',
-            'keydown',
-            'touchstart',
-            'pointerdown',
-        ];
-        this.addEventListeners = function () {
-            _this.eventTypes.forEach(function (event) {
-                _this.profileManager.add(event, document, _this.onInput);
-            });
-        };
-        this.now = function () {
-            return (new Date()).getTime();
-        };
-        this.removeEventListeners = function () {
-            _this.eventTypes.forEach(function (event) {
-                _this.profileManager.remove(event, document, _this.onInput);
-            });
-        };
-        this.onInput = function (evt) {
-            // Only count cancelable events, which should trigger behavior
-            if (!evt.cancelable) {
-                return;
-            }
-            // In some browsers `event.timeStamp` returns a `DOMTimeStamp` value
-            // (epoch time) istead of the newer `DOMHighResTimeStamp`
-            // (document-origin time). To check for that we assume any timestamp
-            // greater than 1 trillion is a `DOMTimeStamp`, and compare it using
-            var isEpochTime = evt.timeStamp > 1e12;
-            _this.firstInputTimeStamp = _this.now();
-            var useFirstInputTime = isEpochTime || !window['performance'];
-            var now = useFirstInputTime ? _this.firstInputTimeStamp : window['performance'].now();
-            _this.delay = now - evt.timeStamp;
-            if (evt.type == 'pointerdown') {
-                _this.onPointerDown();
-            }
-            else {
-                _this.removeEventListeners();
-                _this.updateFirstInputDelay();
-            }
-        };
-        this.onPointerUp = function () {
-            _this.removeEventListeners();
-            _this.updateFirstInputDelay();
-        };
-        this.onPointerCancel = function () {
-            _this.removePointerEventListeners();
-        };
-        this.removePointerEventListeners = function () {
-            _this.profileManager.remove('pointerup', document, _this.onPointerUp);
-            _this.profileManager.remove('pointercancel', document, _this.onPointerCancel);
-        };
-        this.updateFirstInputDelay = function () {
-            if (_this.delay >= 0 && _this.delay < (_this.firstInputTimeStamp - _this.startTime)) {
-                _this.firstInputDelay = Math.round(_this.delay);
-            }
-        };
-        this.startSoftNavigationCapture = function () {
-            _this.resetSoftNavigationCapture();
-        };
-        this.resetSoftNavigationCapture = function () {
-            _this.resetFirstInputDelay();
-            _this.addEventListeners();
-        };
-        this.resetFirstInputDelay = function () {
-            _this.delay = 0;
-            _this.firstInputDelay = 0;
-            _this.startTime = 0;
-            _this.firstInputTimeStamp = 0;
-        };
-        this.startTime = this.now();
-        this.addEventListeners();
-    }
-    InputDelayHandler.prototype.onPointerDown = function () {
-        this.profileManager.add('pointerup', document, this.onPointerUp);
-        this.profileManager.add('pointercancel', document, this.onPointerCancel);
-    };
-    InputDelayHandler.prototype.getFirstInputDelay = function () {
-        return this.firstInputDelay;
-    };
-    return InputDelayHandler;
-}());
-exports["default"] = InputDelayHandler;
-
-
-/***/ }),
-
-/***/ "./src/rprofiler/ProfilerEventManager.ts":
-/*!***********************************************!*\
-  !*** ./src/rprofiler/ProfilerEventManager.ts ***!
-  \***********************************************/
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-var ProfilerEventManager = /** @class */ (function () {
-    function ProfilerEventManager() {
-        this.events = [];
-        this.hasAttachEvent = !!window['attachEvent'];
-    }
-    ProfilerEventManager.prototype.add = function (type, target, func) {
-        this.events.push({ type: type, target: target, func: func });
-        if (this.hasAttachEvent) {
-            target.attachEvent("on" + type, func);
-        }
-        else {
-            target.addEventListener(type, func, false);
-        }
-    };
-    ProfilerEventManager.prototype.remove = function (type, target, func) {
-        if (this.hasAttachEvent) {
-            target.detachEvent(type, func);
-        }
-        else {
-            target.removeEventListener(type, func, false);
-        }
-        var index = this.events.indexOf({ type: type, target: target, func: func });
-        if (index !== 1) {
-            this.events.splice(index, 1);
-        }
-    };
-    ProfilerEventManager.prototype.clear = function () {
-        var events = this.events;
-        for (var i = 0; i < events.length; i++) {
-            var ev = events[i];
-            this.remove(ev.type, ev.target, ev.func);
-        }
-        this.events = [];
-    };
-    return ProfilerEventManager;
-}());
-exports["default"] = ProfilerEventManager;
-
-
-/***/ }),
-
-/***/ "./src/rprofiler/ProfilerJsError.ts":
-/*!******************************************!*\
-  !*** ./src/rprofiler/ProfilerJsError.ts ***!
-  \******************************************/
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-var ProfilerJsError = /** @class */ (function () {
-    function ProfilerJsError(message, url, lineNumber) {
-        this.count = 0;
-        this.message = message;
-        this.url = url;
-        this.lineNumber = lineNumber;
-    }
-    ProfilerJsError.createText = function (msg, url, num) {
-        return [msg, url, num].join(":");
-    };
-    ProfilerJsError.prototype.getText = function () {
-        return ProfilerJsError.createText(this.message, this.url, this.lineNumber);
-    };
-    return ProfilerJsError;
-}());
-exports["default"] = ProfilerJsError;
-
-
-/***/ }),
-
-/***/ "./src/rprofiler/rprofiler.ts":
-/*!************************************!*\
-  !*** ./src/rprofiler/rprofiler.ts ***!
-  \************************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-"use strict";
-
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-var web_vitals_1 = __webpack_require__(/*! web-vitals */ "./node_modules/web-vitals/dist/web-vitals.umd.cjs");
-var types_1 = __webpack_require__(/*! ../types */ "./src/types.ts");
-var AjaxRequestsHandler_1 = __importDefault(__webpack_require__(/*! ./AjaxRequestsHandler */ "./src/rprofiler/AjaxRequestsHandler.ts"));
-var EventsTimingHandler_1 = __importDefault(__webpack_require__(/*! ./EventsTimingHandler */ "./src/rprofiler/EventsTimingHandler.ts"));
-var InputDelayHandler_1 = __importDefault(__webpack_require__(/*! ./InputDelayHandler */ "./src/rprofiler/InputDelayHandler.ts"));
-var ProfilerEventManager_1 = __importDefault(__webpack_require__(/*! ./ProfilerEventManager */ "./src/rprofiler/ProfilerEventManager.ts"));
-var ProfilerJsError_1 = __importDefault(__webpack_require__(/*! ./ProfilerJsError */ "./src/rprofiler/ProfilerJsError.ts"));
-var RProfiler = /** @class */ (function () {
-    function RProfiler() {
-        var _this = this;
-        // private restUrl: string = "{{restUrl}}";
-        this.restUrl = "portalstage.catchpoint.com/jp/1826/v3.3.8/M";
-        this.startTime = (new Date()).getTime();
-        this.eventsTimingHandler = new EventsTimingHandler_1.default();
-        this.inputDelay = new InputDelayHandler_1.default();
-        // version: string = "{{version}}"; //version number of inline script
-        this.version = "v3.3.8"; //version number of inline script
-        this.info = {};
-        this.hasInsight = false;
-        this.data = {
-            start: this.startTime,
-            jsCount: 0,
-            jsErrors: [],
-            loadTime: -1,
-            loadFired: window.document.readyState == "complete",
-        };
-        this.eventManager = new ProfilerEventManager_1.default();
-        this.setCLS = function (_a) {
-            var metricName = _a.name, metricValue = _a.delta;
-            var CLS = metricName === 'CLS' ? metricValue : undefined;
-            _this.cls = CLS;
-        };
-        this.setLCP = function (_a) {
-            var metricName = _a.name, metricValue = _a.delta;
-            var LCP = metricName === 'LCP' ? metricValue : undefined;
-            _this.lcp = LCP;
-        };
-        // Value being used instead delta as metricValue, Delta provide single value and value is for overall value.
-        this.setINP = function (_a) {
-            var metricName = _a.name, metricValue = _a.value;
-            var INP = metricName === 'INP' ? metricValue : undefined;
-            _this.inp = INP;
-        };
-        this.recordPageLoad = function () {
-            _this.data.loadTime = (new Date()).getTime();
-            _this.data.loadFired = true;
-        };
-        this.addError = function (msg, url, lineNum) {
-            _this.data.jsCount++;
-            var currError = ProfilerJsError_1.default.createText(msg, url, lineNum);
-            var errorArr = _this.data.jsErrors;
-            for (var _i = 0, errorArr_1 = errorArr; _i < errorArr_1.length; _i++) {
-                var err = errorArr_1[_i];
-                if (err.getText() == currError) {
-                    err.count++;
-                    return;
-                }
-            }
-            errorArr.push(new ProfilerJsError_1.default(msg, url, lineNum));
-        };
-        this.getAjaxRequests = function () {
-            return _this.ajaxHandler.getAjaxRequests();
-        };
-        this.clearAjaxRequests = function () {
-            _this.ajaxHandler.clear();
-        };
-        this.addInfo = function (infoType, key, value) {
-            if (_this.isNullOrEmpty(infoType)) {
-                return;
-            }
-            if (_this.isNullOrEmpty(value)) {
-                _this.info[infoType] = key;
-            }
-            else {
-                if (_this.isNullOrEmpty(key)) {
-                    return;
-                }
-                if (_this.isNullOrEmpty(_this.info[infoType])) {
-                    _this.info[infoType] = {};
-                }
-                _this.info[infoType][key] = value;
-            }
-            _this.hasInsight = true;
-        };
-        this.clearInfo = function () {
-            _this.info = {};
-            _this.hasInsight = false;
-        };
-        this.clearErrors = function () {
-            _this.data.jsCount = 0;
-            _this.data.jsErrors = [];
-        };
-        this.getInfo = function () {
-            if (!_this.hasInsight) {
-                return null;
-            }
-            return _this.info;
-        };
-        this.getEventTimingHandler = function () {
-            return _this.eventsTimingHandler;
-        };
-        this.getInputDelay = function () {
-            return _this.inputDelay;
-        };
-        this.getCPWebVitals = function () {
-            (0, web_vitals_1.onCLS)(_this.setCLS, { reportAllChanges: false });
-            (0, web_vitals_1.onLCP)(_this.setLCP, { reportAllChanges: false });
-            (0, web_vitals_1.onINP)(_this.setINP, { reportAllChanges: false });
-            return {
-                cls: _this.cls,
-                lcp: _this.lcp,
-                inp: _this.inp
-            };
-        };
-        this.attachIframe = function () {
-            var protocol = window.location.protocol;
-            var iframe = document.createElement("iframe");
-            iframe.src = "about:blank";
-            var style = iframe.style;
-            style.position = "absolute";
-            style.top = "-10000px";
-            style.left = "-1000px";
-            iframe.addEventListener('load', function (event) {
-                var frame = event.currentTarget;
-                if (frame && frame.contentDocument) {
-                    var iframeDocument = frame.contentDocument;
-                    var rumScript = iframeDocument.createElement('script');
-                    rumScript.type = 'text/javascript';
-                    rumScript.src = protocol + '//' + _this.restUrl;
-                    iframeDocument.body.appendChild(rumScript);
-                }
-            });
-            if (document.body) {
-                document.body.insertAdjacentElement('afterbegin', iframe);
-            }
-        };
-        this.eventManager.add(types_1.WindowEvent.Load, window, this.recordPageLoad);
-        var errorFunc = this.addError;
-        this.ajaxHandler = new AjaxRequestsHandler_1.default();
-        (0, web_vitals_1.onCLS)(this.setCLS, { reportAllChanges: false });
-        (0, web_vitals_1.onLCP)(this.setLCP, { reportAllChanges: false });
-        (0, web_vitals_1.onINP)(this.setINP, { reportAllChanges: false });
-        function recordJsError(e) {
-            var ev = e.target || e.srcElement;
-            if (ev.nodeType == 3) {
-                ev = ev.parentNode;
-            }
-            errorFunc("N/A", ev.src || ev.URL, -1);
-            return false;
-        }
-        if (!!window["opera"]) {
-            this.eventManager.add(types_1.WindowEvent.Error, document, recordJsError);
-        }
-        else if ("onerror" in window) {
-            var origOnError = window.onerror;
-            window.onerror = function (msg, url, lineNum) {
-                errorFunc(msg, url !== null && url !== void 0 ? url : '', lineNum !== null && lineNum !== void 0 ? lineNum : 0);
-                if (!!origOnError) {
-                    return origOnError(msg, url, lineNum);
-                }
-                return false;
-            };
-        }
-        // Event to capture the errors in promise rejection
-        if ("onunhandledrejection" in window) {
-            window.onunhandledrejection = function (errorEvent) {
-                var _a, _b, _c;
-                var fullMessage = (_a = errorEvent.reason.stack) !== null && _a !== void 0 ? _a : "";
-                var errorMsg = fullMessage !== "" ? fullMessage.split("at") : [];
-                var fileUrl = errorMsg[1] ? errorMsg[1].replace(/:\d+/g, "") : "";
-                var errorLineNumbers = errorMsg[1] ? errorMsg[1].match(/:\d+/g) : [];
-                var lineNum = errorLineNumbers[0] ? errorLineNumbers[0].replace(":", "") : 0;
-                errorFunc((_c = (_b = errorMsg[0]) === null || _b === void 0 ? void 0 : _b.trim()) !== null && _c !== void 0 ? _c : "N/A", fileUrl.trim(), lineNum);
-            };
-        }
-        if (!!window["__cpCdnPath"]) {
-            this.restUrl = window["__cpCdnPath"].trim();
-        }
-    }
-    RProfiler.prototype.isNullOrEmpty = function (val) {
-        if (val === undefined || val === null) {
-            return true;
-        }
-        if (typeof val == "string") {
-            var str = val;
-            return str.trim().length == 0;
-        }
-        return false;
-    };
-    RProfiler.prototype.dispatchCustomEvent = function (event) {
-        (function (w) {
-            if (typeof w.CustomEvent === "function") {
-                return false;
-            }
-            function CustomEvent(event, params) {
-                params = params || { bubbles: false, cancelable: false, detail: undefined };
-                var evt = document.createEvent('CustomEvent');
-                evt.initCustomEvent(event, params.bubbles, params.cancelable, params.detail);
-                return evt;
-            }
-            CustomEvent.prototype = Event.prototype;
-            // @ts-ignore
-            w.CustomEvent = CustomEvent;
-        })(window); //for the browsers don't support CustomEvent
-        var e = new CustomEvent(event);
-        window.dispatchEvent(e);
-    };
-    return RProfiler;
-}());
-exports["default"] = RProfiler;
 var profiler = new RProfiler();
 window["RProfiler"] = profiler;
-window["WindowEvent"] = types_1.WindowEvent;
-// if the document state is already complete by the time script is injected - can happen in the case of tag managers like GTM 
+window["WindowEvent"] = WindowEvent;
 if (document.readyState === 'complete') {
     profiler.attachIframe();
 }
@@ -889,88 +1184,3 @@ else {
 }
 profiler.dispatchCustomEvent("GlimpseLoaded");
 
-
-/***/ }),
-
-/***/ "./src/types.ts":
-/*!**********************!*\
-  !*** ./src/types.ts ***!
-  \**********************/
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.PostType = exports.VisibilityType = exports.WindowEvent = void 0;
-var WindowEvent;
-(function (WindowEvent) {
-    WindowEvent["Load"] = "load";
-    WindowEvent["BeforeUnload"] = "beforeunload";
-    WindowEvent["Abort"] = "abort";
-    WindowEvent["Error"] = "error";
-    WindowEvent["Unload"] = "unload";
-})(WindowEvent || (exports.WindowEvent = WindowEvent = {}));
-var VisibilityType;
-(function (VisibilityType) {
-    VisibilityType[VisibilityType["Focus"] = 0] = "Focus";
-    VisibilityType[VisibilityType["Blur"] = 1] = "Blur";
-})(VisibilityType || (exports.VisibilityType = VisibilityType = {}));
-;
-// enum definition matches core enum
-var PostType;
-(function (PostType) {
-    PostType[PostType["OnLoad"] = 0] = "OnLoad";
-    PostType[PostType["OnBeforeUnload"] = 1] = "OnBeforeUnload";
-    PostType[PostType["OnAbort"] = 2] = "OnAbort";
-    PostType[PostType["Flush"] = 3] = "Flush";
-})(PostType || (exports.PostType = PostType = {}));
-
-
-/***/ }),
-
-/***/ "./node_modules/web-vitals/dist/web-vitals.umd.cjs":
-/*!*********************************************************!*\
-  !*** ./node_modules/web-vitals/dist/web-vitals.umd.cjs ***!
-  \*********************************************************/
-/***/ (function(__unused_webpack_module, exports) {
-
-!function(e,n){ true?n(exports):0}(this,(function(e){"use strict";var n,t,i,r,o,a=-1,c=function(e){addEventListener("pageshow",(function(n){n.persisted&&(a=n.timeStamp,e(n))}),!0)},u=function(){return window.performance&&performance.getEntriesByType&&performance.getEntriesByType("navigation")[0]},f=function(){var e=u();return e&&e.activationStart||0},s=function(e,n){var t=u(),i="navigate";a>=0?i="back-forward-cache":t&&(document.prerendering||f()>0?i="prerender":document.wasDiscarded?i="restore":t.type&&(i=t.type.replace(/_/g,"-")));return{name:e,value:void 0===n?-1:n,rating:"good",delta:0,entries:[],id:"v3-".concat(Date.now(),"-").concat(Math.floor(8999999999999*Math.random())+1e12),navigationType:i}},d=function(e,n,t){try{if(PerformanceObserver.supportedEntryTypes.includes(e)){var i=new PerformanceObserver((function(e){Promise.resolve().then((function(){n(e.getEntries())}))}));return i.observe(Object.assign({type:e,buffered:!0},t||{})),i}}catch(e){}},l=function(e,n,t,i){var r,o;return function(a){n.value>=0&&(a||i)&&((o=n.value-(r||0))||void 0===r)&&(r=n.value,n.delta=o,n.rating=function(e,n){return e>n[1]?"poor":e>n[0]?"needs-improvement":"good"}(n.value,t),e(n))}},p=function(e){requestAnimationFrame((function(){return requestAnimationFrame((function(){return e()}))}))},v=function(e){var n=function(n){"pagehide"!==n.type&&"hidden"!==document.visibilityState||e(n)};addEventListener("visibilitychange",n,!0),addEventListener("pagehide",n,!0)},m=function(e){var n=!1;return function(t){n||(e(t),n=!0)}},h=-1,g=function(){return"hidden"!==document.visibilityState||document.prerendering?1/0:0},T=function(e){"hidden"===document.visibilityState&&h>-1&&(h="visibilitychange"===e.type?e.timeStamp:0,E())},y=function(){addEventListener("visibilitychange",T,!0),addEventListener("prerenderingchange",T,!0)},E=function(){removeEventListener("visibilitychange",T,!0),removeEventListener("prerenderingchange",T,!0)},C=function(){return h<0&&(h=g(),y(),c((function(){setTimeout((function(){h=g(),y()}),0)}))),{get firstHiddenTime(){return h}}},L=function(e){document.prerendering?addEventListener("prerenderingchange",(function(){return e()}),!0):e()},b=[1800,3e3],w=function(e,n){n=n||{},L((function(){var t,i=C(),r=s("FCP"),o=d("paint",(function(e){e.forEach((function(e){"first-contentful-paint"===e.name&&(o.disconnect(),e.startTime<i.firstHiddenTime&&(r.value=Math.max(e.startTime-f(),0),r.entries.push(e),t(!0)))}))}));o&&(t=l(e,r,b,n.reportAllChanges),c((function(i){r=s("FCP"),t=l(e,r,b,n.reportAllChanges),p((function(){r.value=performance.now()-i.timeStamp,t(!0)}))})))}))},S=[.1,.25],P=function(e,n){n=n||{},w(m((function(){var t,i=s("CLS",0),r=0,o=[],a=function(e){e.forEach((function(e){if(!e.hadRecentInput){var n=o[0],t=o[o.length-1];r&&e.startTime-t.startTime<1e3&&e.startTime-n.startTime<5e3?(r+=e.value,o.push(e)):(r=e.value,o=[e])}})),r>i.value&&(i.value=r,i.entries=o,t())},u=d("layout-shift",a);u&&(t=l(e,i,S,n.reportAllChanges),v((function(){a(u.takeRecords()),t(!0)})),c((function(){r=0,i=s("CLS",0),t=l(e,i,S,n.reportAllChanges),p((function(){return t()}))})),setTimeout(t,0))})))},I={passive:!0,capture:!0},F=new Date,A=function(e,r){n||(n=r,t=e,i=new Date,k(removeEventListener),D())},D=function(){if(t>=0&&t<i-F){var e={entryType:"first-input",name:n.type,target:n.target,cancelable:n.cancelable,startTime:n.timeStamp,processingStart:n.timeStamp+t};r.forEach((function(n){n(e)})),r=[]}},M=function(e){if(e.cancelable){var n=(e.timeStamp>1e12?new Date:performance.now())-e.timeStamp;"pointerdown"==e.type?function(e,n){var t=function(){A(e,n),r()},i=function(){r()},r=function(){removeEventListener("pointerup",t,I),removeEventListener("pointercancel",i,I)};addEventListener("pointerup",t,I),addEventListener("pointercancel",i,I)}(n,e):A(n,e)}},k=function(e){["mousedown","keydown","touchstart","pointerdown"].forEach((function(n){return e(n,M,I)}))},x=[100,300],B=function(e,i){i=i||{},L((function(){var o,a=C(),u=s("FID"),f=function(e){e.startTime<a.firstHiddenTime&&(u.value=e.processingStart-e.startTime,u.entries.push(e),o(!0))},p=function(e){e.forEach(f)},h=d("first-input",p);o=l(e,u,x,i.reportAllChanges),h&&v(m((function(){p(h.takeRecords()),h.disconnect()}))),h&&c((function(){var a;u=s("FID"),o=l(e,u,x,i.reportAllChanges),r=[],t=-1,n=null,k(addEventListener),a=f,r.push(a),D()}))}))},N=0,R=1/0,H=0,O=function(e){e.forEach((function(e){e.interactionId&&(R=Math.min(R,e.interactionId),H=Math.max(H,e.interactionId),N=H?(H-R)/7+1:0)}))},j=function(){return o?N:performance.interactionCount||0},q=function(){"interactionCount"in performance||o||(o=d("event",O,{type:"event",buffered:!0,durationThreshold:0}))},V=[200,500],_=0,z=function(){return j()-_},G=[],J={},K=function(e){var n=G[G.length-1],t=J[e.interactionId];if(t||G.length<10||e.duration>n.latency){if(t)t.entries.push(e),t.latency=Math.max(t.latency,e.duration);else{var i={id:e.interactionId,latency:e.duration,entries:[e]};J[i.id]=i,G.push(i)}G.sort((function(e,n){return n.latency-e.latency})),G.splice(10).forEach((function(e){delete J[e.id]}))}},Q=function(e,n){n=n||{},L((function(){var t;q();var i,r=s("INP"),o=function(e){e.forEach((function(e){(e.interactionId&&K(e),"first-input"===e.entryType)&&(!G.some((function(n){return n.entries.some((function(n){return e.duration===n.duration&&e.startTime===n.startTime}))}))&&K(e))}));var n,t=(n=Math.min(G.length-1,Math.floor(z()/50)),G[n]);t&&t.latency!==r.value&&(r.value=t.latency,r.entries=t.entries,i())},a=d("event",o,{durationThreshold:null!==(t=n.durationThreshold)&&void 0!==t?t:40});i=l(e,r,V,n.reportAllChanges),a&&("PerformanceEventTiming"in window&&"interactionId"in PerformanceEventTiming.prototype&&a.observe({type:"first-input",buffered:!0}),v((function(){o(a.takeRecords()),r.value<0&&z()>0&&(r.value=0,r.entries=[]),i(!0)})),c((function(){G=[],_=j(),r=s("INP"),i=l(e,r,V,n.reportAllChanges)})))}))},U=[2500,4e3],W={},X=function(e,n){n=n||{},L((function(){var t,i=C(),r=s("LCP"),o=function(e){var n=e[e.length-1];n&&n.startTime<i.firstHiddenTime&&(r.value=Math.max(n.startTime-f(),0),r.entries=[n],t())},a=d("largest-contentful-paint",o);if(a){t=l(e,r,U,n.reportAllChanges);var u=m((function(){W[r.id]||(o(a.takeRecords()),a.disconnect(),W[r.id]=!0,t(!0))}));["keydown","click"].forEach((function(e){addEventListener(e,(function(){return setTimeout(u,0)}),!0)})),v(u),c((function(i){r=s("LCP"),t=l(e,r,U,n.reportAllChanges),p((function(){r.value=performance.now()-i.timeStamp,W[r.id]=!0,t(!0)}))}))}}))},Y=[800,1800],Z=function e(n){document.prerendering?L((function(){return e(n)})):"complete"!==document.readyState?addEventListener("load",(function(){return e(n)}),!0):setTimeout(n,0)},$=function(e,n){n=n||{};var t=s("TTFB"),i=l(e,t,Y,n.reportAllChanges);Z((function(){var r=u();if(r){var o=r.responseStart;if(o<=0||o>performance.now())return;t.value=Math.max(o-f(),0),t.entries=[r],i(!0),c((function(){t=s("TTFB",0),(i=l(e,t,Y,n.reportAllChanges))(!0)}))}}))};e.CLSThresholds=S,e.FCPThresholds=b,e.FIDThresholds=x,e.INPThresholds=V,e.LCPThresholds=U,e.TTFBThresholds=Y,e.getCLS=P,e.getFCP=w,e.getFID=B,e.getINP=Q,e.getLCP=X,e.getTTFB=$,e.onCLS=P,e.onFCP=w,e.onFID=B,e.onINP=Q,e.onLCP=X,e.onTTFB=$}));
-
-
-/***/ })
-
-/******/ 	});
-/************************************************************************/
-/******/ 	// The module cache
-/******/ 	var __webpack_module_cache__ = {};
-/******/ 	
-/******/ 	// The require function
-/******/ 	function __webpack_require__(moduleId) {
-/******/ 		// Check if module is in cache
-/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
-/******/ 		if (cachedModule !== undefined) {
-/******/ 			return cachedModule.exports;
-/******/ 		}
-/******/ 		// Create a new module (and put it into the cache)
-/******/ 		var module = __webpack_module_cache__[moduleId] = {
-/******/ 			// no module.id needed
-/******/ 			// no module.loaded needed
-/******/ 			exports: {}
-/******/ 		};
-/******/ 	
-/******/ 		// Execute the module function
-/******/ 		__webpack_modules__[moduleId].call(module.exports, module, module.exports, __webpack_require__);
-/******/ 	
-/******/ 		// Return the exports of the module
-/******/ 		return module.exports;
-/******/ 	}
-/******/ 	
-/************************************************************************/
-/******/ 	
-/******/ 	// startup
-/******/ 	// Load entry module and return exports
-/******/ 	// This entry module is referenced by other modules so it can't be inlined
-/******/ 	var __webpack_exports__ = __webpack_require__("./src/rprofiler/rprofiler.ts");
-/******/ 	
-/******/ })()
-;
