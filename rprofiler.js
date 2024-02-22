@@ -668,13 +668,11 @@ var ProfilerJsError_1 = __importDefault(__webpack_require__(/*! ./ProfilerJsErro
 var RProfiler = /** @class */ (function () {
     function RProfiler() {
         var _this = this;
-        // private restUrl: string = "localhost:44394/jp/1826/v3.3.0/s.M";
-        this.restUrl = 'portalstage.catchpoint.com/jp/1826/v3.3.8/M';
+        this.restUrl = 'localhost:44394/jp/1826/v3.3.0/s.M';
         this.startTime = new Date().getTime();
         this.eventsTimingHandler = new EventsTimingHandler_1.default();
         this.inputDelay = new InputDelayHandler_1.default();
-        // version: string = "v3.3.0"; //version number of inline script
-        this.version = 'v3.3.8'; //version number of inline script
+        this.version = 'v3.3.0'; //version number of inline script
         this.info = {};
         this.hasInsight = false;
         this.data = {
