@@ -1,886 +1,1999 @@
 /******/ (() => { // webpackBootstrap
+/******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ "./src/rprofiler/AjaxRequestsHandler.ts":
-/*!**********************************************!*\
-  !*** ./src/rprofiler/AjaxRequestsHandler.ts ***!
-  \**********************************************/
+/***/ "./src/main/AjaxItem.ts":
+/*!******************************!*\
+  !*** ./src/main/AjaxItem.ts ***!
+  \******************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-var AjaxTiming_1 = __importDefault(__webpack_require__(/*! ./AjaxTiming */ "./src/rprofiler/AjaxTiming.ts"));
-var AjaxRequestsHandler = /** @class */ (function () {
-    function AjaxRequestsHandler() {
-        var _this = this;
-        this.fetchRequests = [];
-        this.fetchEntriesIndices = {};
-        this.compareEntriesDelay = 100;
-        this.hasPerformance = typeof window.performance === 'object' &&
-            typeof window.performance.now === 'function' &&
-            typeof window.performance.getEntriesByType === 'function';
-        this.captureFetchRequests = function () {
-            var tempArray = [];
-            var ajaxHandler = _this;
-            var onRequestError = function (error) {
-                return error;
-            };
-            var onResponseError = function (error) {
-                // @ts-ignore
-                return Promise.reject(error);
-            };
-            if (!window.fetch) {
-                return;
-            }
-            /*TODO: Adding ignore to resolve the error
-            Need to relook on ts error. After adding latest vesion in tsconfig lib, It's unable to get the fetch type.*/
-            // @ts-ignore
-            window.fetch = (function (fetch) {
-                return function () {
-                    var args = [];
-                    for (var _i = 0; _i < arguments.length; _i++) {
-                        args[_i] = arguments[_i];
-                    }
-                    var fetchRequestIndex = 0;
-                    /*TODO: Adding ignore to resolve the error
-                    Need to relook on ts error. After adding latest vesion in tsconfig lib, It's unable to get the promise type.*/
-                    // @ts-ignore
-                    var promise = Promise.resolve(args);
-                    promise = promise.then(function (args) {
-                        var firstArg;
-                        var config = {};
-                        if (args.length && args.length >= 1) {
-                            firstArg = args[0];
-                            if (args.length > 1) {
-                                config = args[1];
-                            }
-                        }
-                        else {
-                            return [];
-                        }
-                        var method = 'GET';
-                        if (config.method) {
-                            method = config.method;
-                        }
-                        fetchRequestIndex = tempArray.length;
-                        var fetchUrl = '';
-                        //The first argument can be either a url or Request object
-                        if (typeof firstArg === 'object' && !!firstArg) {
-                            if (Array.isArray(firstArg) && firstArg.length > 0) {
-                                fetchUrl = firstArg[0];
-                            }
-                            else {
-                                fetchUrl = firstArg.url;
-                            }
-                        }
-                        else {
-                            fetchUrl = firstArg;
-                        }
-                        if (fetchUrl) {
-                            tempArray.push(new AjaxTiming_1.default(fetchUrl, method, true, ajaxHandler.now()));
-                        }
-                        return [firstArg, config];
-                    }, onRequestError);
-                    // @ts-ignore
-                    promise = promise.then(function (args) { return fetch.apply(void 0, args); });
-                    promise = promise.then(function (response) {
-                        var fetchRequest = tempArray[fetchRequestIndex];
-                        var requestArray = ajaxHandler.fetchRequests;
-                        ajaxHandler.processPerformanceEntries(fetchRequest, requestArray);
-                        return response;
-                    }, onResponseError);
-                    return promise;
-                };
-            })(window.fetch);
-        };
-        this.captureFetchRequests();
-        AjaxRequestsHandler.startAjaxCapture(this);
+var types_1 = __webpack_require__(/*! ../types */ "./src/types.ts");
+var Util_1 = __importDefault(__webpack_require__(/*! ./Util */ "./src/main/Util.ts"));
+var WaterfallItem_1 = __importDefault(__webpack_require__(/*! ./WaterfallItem */ "./src/main/WaterfallItem.ts"));
+var AjaxItem = /** @class */ (function (_super) {
+    __extends(AjaxItem, _super);
+    function AjaxItem(timing, resource, isSummary) {
+        var _this = _super.call(this, resource) || this;
+        _this.responseTime = 0; // calculated from readyState changes
+        _this.sendSize = 0;
+        _this.responseSize = 0;
+        _this.method = types_1.WinHttpMethod[timing.method.toUpperCase()];
+        if (timing.complete && timing.connectionEstablished) {
+            _this.responseTime = timing.complete - timing.connectionEstablished;
+        }
+        _this.isSummary = isSummary;
+        if (isSummary) {
+            _this.start = undefined; // summary items should not have start time
+            _this.count = 1;
+        }
+        else {
+            _this.isAsync = timing.isAsync;
+        }
+        _this.sendSize = timing.sendSize || 0;
+        _this.responseSize = timing.responseSize || 0;
+        return _this;
     }
-    AjaxRequestsHandler.prototype.getAjaxRequests = function () {
-        return this.fetchRequests;
-    };
-    AjaxRequestsHandler.prototype.clear = function () {
-        this.fetchRequests = [];
-    };
-    AjaxRequestsHandler.prototype.now = function () {
-        if (this.hasPerformance) {
-            return window.performance.now();
+    AjaxItem.prototype.update = function (timing, resource) {
+        var func = Util_1.default.getValue;
+        if (resource.responseStart) {
+            this.dns += func(resource, types_1.Metrics.DNS);
+            this.connect += func(resource, types_1.Metrics.Connect);
+            this.wait += func(resource, types_1.Metrics.Wait);
+            this.load += func(resource, types_1.Metrics.Load);
+            this.ssl += func(resource, types_1.Metrics.SSL);
         }
-        return new Date().getTime();
+        this.duration += func(resource, types_1.Metrics.Duration);
+        this.redirect += func(resource, types_1.Metrics.Redirect);
+        this.sendSize += timing.sendSize || 0;
+        this.responseSize += timing.responseSize || 0;
+        this.count++;
     };
-    AjaxRequestsHandler.prototype.processPerformanceEntries = function (fetchRequest, requestArray) {
-        var ajaxHandler = this;
-        setTimeout(function () {
-            if (!ajaxHandler.hasPerformance) {
-                return;
-            }
-            var url = fetchRequest.url;
-            var matches = [];
-            var entries = performance.getEntriesByType('resource');
-            for (var _i = 0, entries_1 = entries; _i < entries_1.length; _i++) {
-                var entry = entries_1[_i];
-                if (entry.name === url) {
-                    matches.push(entry);
-                }
-            }
-            requestArray.push(fetchRequest);
-            if (matches.length === 0) {
-                return;
-            }
-            if (!ajaxHandler.fetchEntriesIndices[url]) {
-                ajaxHandler.fetchEntriesIndices[url] = [];
-            }
-            if (matches.length === 1) {
-                fetchRequest.getPerformanceTimings(matches[0]);
-                ajaxHandler.fetchEntriesIndices[url].push(0);
-                return;
-            }
-            var u = ajaxHandler.fetchEntriesIndices[url];
-            for (var index in matches) {
-                if (u.indexOf(index) !== -1) {
-                    continue;
-                }
-                fetchRequest.getPerformanceTimings(matches[index]);
-                u.push(index);
-                return;
-            }
-            fetchRequest.getPerformanceTimings(matches[0]); // if we can't find it, just use the first entry
-        }, ajaxHandler.compareEntriesDelay);
-    };
-    AjaxRequestsHandler.startAjaxCapture = function (ajaxHandler) {
-        var xhr = XMLHttpRequest.prototype;
-        var open = xhr.open;
-        var send = xhr.send;
-        var tempArray = [];
-        if (ajaxHandler.hasPerformance && typeof window.performance.setResourceTimingBufferSize === 'function') {
-            window.performance.setResourceTimingBufferSize(300);
+    AjaxItem.prototype.translateForPost = function () {
+        var obj = _super.prototype.translateForPost.call(this);
+        if (this.isSummary) {
+            obj['n'] = this.count;
         }
-        // @ts-ignore
-        xhr.open = function (method, url, async, user, password) {
-            this.rpIndex = tempArray.length;
-            tempArray.push(new AjaxTiming_1.default(url, method, async, ajaxHandler.now()));
-            open.call(this, method, url, async === false ? false : true, user, password);
-        };
-        xhr.send = function (data) {
-            var _this = this;
-            var changeFunc = this.onreadystatechange;
-            this.onreadystatechange = function (arg) {
-                var request = tempArray[_this.rpIndex];
-                if (!request) {
-                    return;
-                }
-                var state = _this.readyState;
-                var hasResponse = !!(_this.response && _this.response !== null && _this.response !== undefined);
-                switch (state) {
-                    case 0:
-                        break;
-                    case 1:
-                        request.connectionEstablished = ajaxHandler.now();
-                        break;
-                    case 2:
-                        request.requestReceived = ajaxHandler.now();
-                        break;
-                    case 3:
-                        request.processingTime = ajaxHandler.now();
-                        break;
-                    case 4:
-                        request.complete = ajaxHandler.now();
-                        switch (_this.responseType) {
-                            case 'text':
-                            case '':
-                                if (typeof _this.responseText === 'string') {
-                                    request.responseSize = _this.responseText.length;
-                                }
-                                break;
-                            case 'json':
-                                if (hasResponse && typeof _this.response.toString === 'function') {
-                                    request.responseSize = _this.response.toString().length;
-                                }
-                                break;
-                            case 'arraybuffer':
-                                if (hasResponse && typeof _this.response.byteLength === 'number') {
-                                    request.responseSize = _this.response.byteLength;
-                                }
-                                break;
-                            case 'blob':
-                                if (hasResponse && typeof _this.response.size === 'number') {
-                                    request.responseSize = _this.response.size;
-                                }
-                                break;
-                            case 'document':
-                                break;
-                        }
-                        ajaxHandler.processPerformanceEntries(request, ajaxHandler.fetchRequests);
-                        break;
-                }
-                if (typeof changeFunc === 'function') {
-                    changeFunc.call(_this, arg);
-                }
-            };
-            var request = tempArray[this.rpIndex];
-            if (!request) {
-                return;
-            }
-            if (data && !isNaN(data.length)) {
-                request.sendSize = data.length;
-            }
-            request.send = ajaxHandler.now();
-            send.call(this, data);
-        };
+        else {
+            obj['ia'] = this.isAsync ? 1 : 0;
+        }
+        obj['md'] = this.method;
+        obj['rp'] = Math.round(this.responseTime);
+        obj['ss'] = this.sendSize;
+        obj['rs'] = this.responseSize;
+        return obj;
     };
-    return AjaxRequestsHandler;
-}());
-exports["default"] = AjaxRequestsHandler;
+    return AjaxItem;
+}(WaterfallItem_1.default));
+exports["default"] = AjaxItem;
 
 
 /***/ }),
 
-/***/ "./src/rprofiler/AjaxTiming.ts":
-/*!*************************************!*\
-  !*** ./src/rprofiler/AjaxTiming.ts ***!
-  \*************************************/
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-var AjaxTiming = /** @class */ (function () {
-    function AjaxTiming(url, method, isAsync, open) {
-        var _this = this;
-        this.getPerformanceTimings = function (entry) {
-            // If a call is being made on same url multiple time, take the first one so that we capture dns and ssl time
-            _this.connect = entry.connectEnd - entry.connectStart;
-            _this.dns = entry.domainLookupEnd - entry.domainLookupStart;
-            _this.duration = entry.duration;
-            _this.load = entry.responseEnd - entry.responseStart;
-            _this.wait = entry.responseStart - entry.requestStart;
-            _this.start = entry.startTime;
-            _this.redirect = entry.redirectEnd - entry.redirectStart;
-            if (entry['secureConnectionStart']) {
-                _this.ssl = entry.connectEnd - entry['secureConnectionStart'];
-            }
-        };
-        this.url = url;
-        this.method = method;
-        this.isAsync = isAsync;
-        this.open = open;
-    }
-    return AjaxTiming;
-}());
-exports["default"] = AjaxTiming;
-
-
-/***/ }),
-
-/***/ "./src/rprofiler/EventsTimingHandler.ts":
-/*!**********************************************!*\
-  !*** ./src/rprofiler/EventsTimingHandler.ts ***!
-  \**********************************************/
+/***/ "./src/main/DataProvider.ts":
+/*!**********************************!*\
+  !*** ./src/main/DataProvider.ts ***!
+  \**********************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 var types_1 = __webpack_require__(/*! ../types */ "./src/types.ts");
-var ProfilerEventManager_1 = __importDefault(__webpack_require__(/*! ./ProfilerEventManager */ "./src/rprofiler/ProfilerEventManager.ts"));
-var EventsTimingHandler = /** @class */ (function () {
-    function EventsTimingHandler() {
+var PostData_1 = __importDefault(__webpack_require__(/*! ./PostData */ "./src/main/PostData.ts"));
+var Util_1 = __importDefault(__webpack_require__(/*! ./Util */ "./src/main/Util.ts"));
+var Visitor_1 = __importDefault(__webpack_require__(/*! ./Visitor */ "./src/main/Visitor.ts"));
+var main_1 = __importDefault(__webpack_require__(/*! ./main */ "./src/main/main.ts"));
+var PerformanceObserver_1 = __importDefault(__webpack_require__(/*! ./PerformanceObserver */ "./src/main/PerformanceObserver.ts"));
+var profiler = main_1.default.profiler, config = main_1.default.config, pageWindow = main_1.default.pageWindow, hasGetEntriesApi = main_1.default.hasGetEntriesApi, hasPerformanceApi = main_1.default.hasPerformanceApi, now = main_1.default.now, windowEventDef = main_1.default.windowEventDef;
+var performanceObserver = new PerformanceObserver_1.default(false);
+var DataProvider = /** @class */ (function () {
+    function DataProvider() {
         var _this = this;
-        //Capture window Focus (Used for Page On Time)
-        this.hiddenStrings = ['hidden', 'msHidden', 'webkitHidden', 'mozHidden'];
-        this.visibilityStrings = [
-            'visibilitychange',
-            'msvisibilitychange',
-            'webkitvisibilitychange',
-            'mozvisibilitychange'
-        ];
-        // @ts-ignore
-        this.captureSoftNavigation = false;
-        this.hidden = 'hidden';
-        this.visibilityChange = 'visibilitychange';
-        this.visibilityEvents = [];
-        // Capture scroll, focus, resize, mouse and keyEvents
-        this.eventManager = new ProfilerEventManager_1.default();
-        this.engagementTimeIntervalMs = 1000;
-        this.engagementTime = 0;
-        this.firstEngagementTime = 0;
-        this.lastEventTimeStamp = 0;
-        this.timeoutId = undefined;
-        this.startTime = new Date().getTime();
-        this.now = function () {
-            return new Date().getTime();
+        this.visitor = new Visitor_1.default();
+        this.postUrl = config.postUrl;
+        this.didSendInitial = false;
+        this.isDebugging = false;
+        this.countResourcesSent = 0;
+        this.didSoftNavigation = false;
+        this.currentUrl = '';
+        this.softNavigationStart = 0;
+        // limit to protect us from processing very large numbers of performance marks that the client
+        // may have added to their page.
+        this.MaxNumberOfPerformanceMarks = 1000;
+        this.updatePerformanceMetrics = function (postObj) {
+            var timing = Util_1.default.getNavigationTime();
+            if (!timing) {
+                return;
+            }
+            var navigationtiming = timing;
+            var navStart = Util_1.default.getNavigationStart(timing);
+            var domLoading = navigationtiming.loadEventEnd;
+            var allowOrigin = timing.responseStart;
+            postObj.dns = allowOrigin ? timing.domainLookupEnd - timing.domainLookupStart : null;
+            postObj.fullConnect = allowOrigin ? timing.connectEnd - timing.connectStart : null;
+            postObj.wait = allowOrigin ? timing.responseStart - timing.requestStart : null;
+            postObj.load = allowOrigin ? timing.responseEnd - timing.responseStart : null;
+            postObj.domInteractive = Util_1.default.getMetricValue(timing.domInteractive, navStart);
+            postObj.domLoaded = Util_1.default.getMetricValue(timing.domContentLoadedEventStart, navStart);
+            postObj.docComplete = Util_1.default.getMetricValue(timing.domComplete, navStart);
+            postObj.response = Util_1.default.getMetricValue(timing.responseEnd, navStart);
+            postObj.contentLoad = Util_1.default.getMetricValue(timing.loadEventStart, domLoading);
+            postObj.redirect = timing.redirectEnd - timing.redirectStart;
+            if (timing['secureConnectionStart']) {
+                postObj.secureConnect = timing.connectEnd - timing['secureConnectionStart'];
+            }
         };
-        // @ts-ignore
-        this.startVisibilityCapture = function () {
-            _this.initializeVisibilityProperties();
-            document.addEventListener(_this.visibilityChange, _this.captureFocusEvent, false);
-        };
-        this.initializeVisibilityProperties = function () {
-            var values = _this.hiddenStrings;
-            var propertyIndex = 0;
-            for (var i = 0; i < values.length; i++) {
-                if (typeof document[values[i]] !== 'undefined') {
-                    propertyIndex = i;
+        this.updateResources = function (ev, postObj) {
+            if (hasPerformanceApi) {
+                var arr = [];
+                if (hasGetEntriesApi) {
+                    arr = pageWindow.performance.getEntriesByType('resource');
+                }
+                if (ev != types_1.PostType.OnLoad) {
+                    _this.setClearResources();
+                    if (config.clearResources && pageWindow.performance.clearResourceTimings) {
+                        postObj.resources = arr;
+                        pageWindow.performance.clearResourceTimings();
+                    }
+                    else {
+                        postObj.resources = arr.slice(_this.countResourcesSent);
+                        _this.countResourcesSent = arr.length;
+                    }
                 }
             }
-            _this.visibilityChange = _this.visibilityStrings[propertyIndex];
-            _this.hidden = _this.hiddenStrings[propertyIndex];
         };
-        this.captureFocusEvent = function () {
-            _this.updateVisibilityChangeTime();
-            if (!document[_this.hidden]) {
-                _this.captureEngagementTime();
+        this.getTimeOnPage = function (isSoftNavigation) {
+            var focusAwayTime = _this.getFocusAwayTime();
+            var navigationStart = _this.getNavigationStart(isSoftNavigation);
+            var timeOnPage = now() - navigationStart - focusAwayTime;
+            return timeOnPage;
+        };
+        this.getVisuallyComplete = function (isSoftNavigation) {
+            if (pageWindow['CPVisuallyComplete']) {
+                var val = pageWindow['CPVisuallyComplete'].getValue(isSoftNavigation);
+                if (typeof val == 'number' && val >= 0) {
+                    return val;
+                }
             }
         };
-        this.updateVisibilityChangeTime = function () {
-            if (document[_this.hidden]) {
-                _this.captureVisibilityEvent(types_1.VisibilityType.Blur);
+        this.updateEngagementMetrics = function (postObj, isSoftNavigation) {
+            if (hasGetEntriesApi) {
+                var paintTimings = pageWindow.performance.getEntriesByType('paint');
+                if (paintTimings && paintTimings.length > 0) {
+                    postObj.firstPaint = _this.getPaintTimings(paintTimings, 'first-paint');
+                    postObj.firstContentPaint = _this.getPaintTimings(paintTimings, 'first-contentful-paint');
+                }
+            }
+            var timing = Util_1.default.getNavigationTime();
+            if (timing) {
+                var navStart = Util_1.default.getNavigationStart(timing);
+                var contentLoadEnd = Util_1.default.getMetricValue(timing.domContentLoadedEventEnd, navStart);
+                var timeToInteract = performanceObserver.getLongTaskTime();
+                if (isSoftNavigation) {
+                    // For soft navigation when there are no long tasks captured, post visually complate as TTI.
+                    postObj.timeToInteract = timeToInteract || _this.getVisuallyComplete(isSoftNavigation);
+                }
+                else {
+                    postObj.timeToInteract =
+                        contentLoadEnd && contentLoadEnd < timeToInteract ? timeToInteract : contentLoadEnd;
+                }
+            }
+            if (profiler.getEventTimingHandler) {
+                postObj.engagementTime = profiler.getEventTimingHandler().getEngagementTime();
+                postObj.timeOnPage = _this.getTimeOnPage(isSoftNavigation);
+                postObj.firstEngagementTime = _this.getFirstEngagementTime(isSoftNavigation);
+            }
+            if (profiler.getInputDelay) {
+                postObj.firstInputDelay = profiler.getInputDelay().getFirstInputDelay();
+            }
+        };
+        this.getFirstEngagementTime = function (isSoftNavigation) {
+            var navigationStart = _this.getNavigationStart(isSoftNavigation);
+            var engagementStartTime = profiler.getEventTimingHandler().getFirstEngagementTime();
+            if (engagementStartTime && navigationStart) {
+                var firstEngagementTime = engagementStartTime - navigationStart;
+                return firstEngagementTime;
+            }
+            return 0;
+        };
+        this.getNavigationStart = function (isSoftNavigation) {
+            var navigationStart = profiler.getEventTimingHandler &&
+                typeof profiler.getEventTimingHandler === 'function' &&
+                profiler.getEventTimingHandler().getStartTime &&
+                typeof profiler.getEventTimingHandler().getStartTime === 'function'
+                ? profiler.getEventTimingHandler().getStartTime()
+                : 0;
+            return isSoftNavigation ? _this.softNavigationStart : navigationStart;
+        };
+        this.getElapsedTimeSinceLatestNavStart = function () {
+            var navStart = profiler.data.start;
+            if (_this.didSoftNavigation && navStart) {
+                return _this.softNavigationStart - navStart;
             }
             else {
-                _this.captureVisibilityEvent(types_1.VisibilityType.Focus);
-            }
-        };
-        this.onBlur = function () {
-            _this.captureVisibilityEvent(types_1.VisibilityType.Blur);
-        };
-        this.onFocus = function () {
-            _this.captureVisibilityEvent(types_1.VisibilityType.Focus);
-        };
-        this.captureVisibilityEvent = function (type) {
-            _this.visibilityEvents.push({
-                type: type,
-                time: _this.now()
-            });
-        };
-        this.captureEngagementTime = function (isFirstEngagement) {
-            if (isFirstEngagement === void 0) { isFirstEngagement = true; }
-            // 1000 ms for default focus
-            if (!_this.lastEventTimeStamp) {
-                _this.engagementTime = _this.engagementTimeIntervalMs;
-                _this.lastEventTimeStamp = _this.now();
-                return;
-            }
-            var timeBetweenEvents = _this.now() - _this.lastEventTimeStamp;
-            _this.lastEventTimeStamp = _this.now();
-            if (isFirstEngagement && _this.firstEngagementTime === 0) {
-                _this.firstEngagementTime = _this.now();
-            }
-            if (timeBetweenEvents > 0 && timeBetweenEvents < _this.engagementTimeIntervalMs) {
-                clearTimeout(_this.timeoutId);
-                _this.engagementTime += timeBetweenEvents;
-                return;
-            }
-            _this.startTimer();
-        };
-        //Do not include mousemove for first engagement, as it doesn't really indicate engagement if use just moved mouse to close the page
-        this.captureMouseMove = function () {
-            _this.captureEngagementTime(false);
-        };
-        this.startTimer = function () {
-            _this.timeoutId = window.setTimeout(function () {
-                _this.engagementTime += _this.engagementTimeIntervalMs;
-            }, _this.engagementTimeIntervalMs);
-        };
-        this.getFocusAwayTime = function () {
-            var events = _this.visibilityEvents;
-            var resetIndex = -1;
-            if (events.length === 0) {
                 return 0;
             }
-            var currentBlurIndex = resetIndex;
-            var index = 0;
-            var currentFocusIndex = resetIndex;
-            var hiddenTimeLapsed = 0;
-            while (index < events.length) {
-                if (events[index].type === types_1.VisibilityType.Blur && currentBlurIndex === resetIndex) {
-                    currentBlurIndex = index;
-                }
-                var isNewFocusEvent = currentFocusIndex === resetIndex && currentBlurIndex !== resetIndex;
-                if (events[index].type === types_1.VisibilityType.Focus && isNewFocusEvent) {
-                    currentFocusIndex = index;
-                }
-                var validFocusChange = currentBlurIndex !== resetIndex && currentFocusIndex !== resetIndex;
-                if (validFocusChange) {
-                    var diff = events[currentFocusIndex].time - events[currentBlurIndex].time;
-                    if (diff > 0) {
-                        hiddenTimeLapsed += diff;
-                    }
-                    currentBlurIndex = resetIndex;
-                    currentFocusIndex = resetIndex;
-                }
-                index = index + 1;
+        };
+        this.getFocusAwayTime = function () {
+            return profiler.getEventTimingHandler().getFocusAwayTime() || 0;
+        };
+        this.updateDebugData = function () {
+            var postObj = _this.createInitPostObject(types_1.PostType.OnBeforeUnload, false);
+            var sendWaterfall = _this.visitor.store.sendWaterfall || !!Util_1.default.getQueryStringValue(config.waterfallParameter);
+            var dataStr = postObj.toString(types_1.PostType.OnLoad, sendWaterfall);
+            profiler['debugData'] = postObj;
+            profiler['unloadDebugData'] = dataStr;
+        };
+        this.onPageLoad = function () {
+            if (_this.isDebugging) {
+                profiler['debugData'] = _this.createInitPostObject(types_1.PostType.OnLoad, false);
+                profiler['updateDebugData'] = _this.updateDebugData;
+                profiler['sendData'] = function () {
+                    _this.doPost(types_1.PostType.OnBeforeUnload, false);
+                };
+                Util_1.default.stopEvents();
+                Util_1.default.addScriptTag(config.debugUrl, pageWindow);
+                return;
             }
-            if (currentBlurIndex === events.length - 1) {
-                hiddenTimeLapsed += _this.now() - events[currentBlurIndex].time;
+            _this.visitor.updateSessionTime();
+            _this.doPost(types_1.PostType.OnLoad, false);
+        };
+        this.captureSoftNavigations = function () {
+            profiler.eventManager.add('hashchange', pageWindow, _this.onSoftNavigation);
+            var history = pageWindow.history;
+            if (!history) {
+                return;
             }
-            return hiddenTimeLapsed;
+            var functionStr = 'function';
+            if (typeof history.go === functionStr) {
+                var origGo_1 = history.go;
+                history.go = function (delta) {
+                    _this.onSoftNavigation();
+                    origGo_1.call(history, delta);
+                };
+            }
+            if (typeof history.back === functionStr) {
+                var origBack_1 = history.back;
+                history.back = function () {
+                    _this.onSoftNavigation();
+                    origBack_1.call(history);
+                };
+            }
+            if (typeof history.forward === functionStr) {
+                var origForward_1 = history.forward;
+                history.forward = function () {
+                    _this.onSoftNavigation();
+                    origForward_1.call(history);
+                };
+            }
+            if (typeof history.pushState === functionStr) {
+                var origPush_1 = history.pushState;
+                history.pushState = function (data, title, url) {
+                    _this.onSoftNavigation();
+                    origPush_1.call(history, data, title, url);
+                };
+            }
+            if (typeof history.replaceState === functionStr) {
+                var origReplace_1 = history.replaceState;
+                history.replaceState = function (data, title, url) {
+                    _this.onSoftNavigation();
+                    origReplace_1.call(history, data, title, url);
+                };
+            }
         };
-        this.getEngagementTime = function () {
-            return _this.engagementTime;
+        // @ts-ignore
+        this.onViewVisuallyComplete = function (val) {
+            if (_this.didSoftNavigation) {
+                _this.doPost(types_1.PostType.OnLoad, true);
+            }
         };
-        this.getStartTime = function () {
-            return _this.startTime;
+        this.onSoftNavigation = function () {
+            // do not consider softnavigation when load is not fired yet .....
+            if (!profiler.data.loadFired) {
+                return;
+            }
+            var vc;
+            if (performanceObserver) {
+                performanceObserver = new PerformanceObserver_1.default(true);
+            }
+            if (pageWindow['CPVisuallyComplete']) {
+                vc = pageWindow['CPVisuallyComplete'];
+                vc.onComplete(_this.onViewVisuallyComplete);
+            }
+            _this.doPost(types_1.PostType.OnBeforeUnload, _this.didSoftNavigation);
+            _this.visitor.store.viewCount++;
+            if (!!vc) {
+                pageWindow.setTimeout(function () {
+                    vc.reset();
+                }, 0);
+            }
+            //Capture navigation start for each soft navigation
+            pageWindow.setTimeout(function () {
+                _this.softNavigationStart = now();
+                if (profiler.getEventTimingHandler) {
+                    var handler = profiler.getEventTimingHandler();
+                    var inputHandler = profiler.getInputDelay();
+                    handler.startSoftNavigationCapture();
+                    inputHandler.startSoftNavigationCapture();
+                    handler.resetSoftNavigationCapture();
+                }
+            }, 0);
+            _this.didSoftNavigation = true;
         };
-        this.getFirstEngagementTime = function () {
-            return _this.firstEngagementTime;
+        this.doPost = function (type, isSoftNavigation) {
+            if (!_this.visitor.shouldPost()) {
+                return;
+            }
+            if (type == types_1.PostType.OnBeforeUnload && !profiler.data.loadFired) {
+                type = types_1.PostType.OnAbort;
+            }
+            var postObj;
+            if (_this.didSendInitial) {
+                postObj = _this.createDiffPostObject(type, isSoftNavigation);
+            }
+            else {
+                postObj = _this.createInitPostObject(type, isSoftNavigation);
+                _this.didSendInitial = true;
+            }
+            var canSendWaterfall = _this.visitor.store.sendWaterfall || !!Util_1.default.getQueryStringValue(config.waterfallParameter);
+            var isWaterfallPost = type == types_1.PostType.OnBeforeUnload || type == types_1.PostType.OnAbort;
+            var sendWaterfall = canSendWaterfall && isWaterfallPost;
+            _this.makeRequest(type, postObj, sendWaterfall);
         };
-        this.startSoftNavigationCapture = function () {
-            _this.captureSoftNavigation = true;
+        if (!profiler || !profiler.data) {
+            return;
+        }
+        var didInitVisitor = this.visitor.init();
+        this.isDebugging = !!Util_1.default.getQueryStringValue(config.debugParameter);
+        if (!this.isDebugging && !didInitVisitor) {
+            Util_1.default.stopEvents();
+            return;
+        }
+        this.captureSoftNavigations();
+        // page load event capture
+        var didLoadPost = false;
+        var loadPost = function () {
+            if (didLoadPost) {
+                return;
+            }
+            profiler.data.loadFired = true;
+            didLoadPost = true;
+            _this.onPageLoad();
         };
-        this.resetSoftNavigationCapture = function () {
-            _this.resetEngagementMetrics();
-            _this.visibilityEvents = [];
+        if (!profiler.data.loadFired && !!pageWindow.document) {
+            profiler.data.loadFired = pageWindow.document.readyState === 'complete';
+        }
+        if (profiler.data.loadFired) {
+            loadPost();
+        }
+        else {
+            profiler.eventManager.add(windowEventDef.Load, parent.window, loadPost);
+        }
+        // need on both "beforeunload" and "unload" for cross-browser compatibility
+        var didUnloadPost = false;
+        var unloadPost = function () {
+            if (didUnloadPost) {
+                return;
+            }
+            didUnloadPost = true;
+            _this.doPost(types_1.PostType.OnBeforeUnload, false);
         };
-        this.resetEngagementMetrics = function () {
-            _this.engagementTime = 0;
-            _this.lastEventTimeStamp = _this.now();
-            _this.firstEngagementTime = 0;
-        };
-        this.clear = function () {
-            _this.eventManager.clear();
-        };
-        this.captureEngagementTime(false);
-        this.eventManager.add('scroll', document, this.captureEngagementTime);
-        this.eventManager.add('resize', window, this.captureEngagementTime);
-        this.eventManager.add('mouseup', document, this.captureEngagementTime);
-        this.eventManager.add('keyup', document, this.captureEngagementTime);
-        this.eventManager.add('mousemove', document, this.captureMouseMove);
-        this.eventManager.add('focus', window, this.onFocus);
-        this.eventManager.add('blur', window, this.onBlur);
-        this.eventManager.add('focus', document, this.onFocus);
-        this.eventManager.add('blur', document, this.onBlur);
+        profiler.eventManager.add(windowEventDef.BeforeUnload, pageWindow, unloadPost);
+        profiler.eventManager.add(windowEventDef.Unload, pageWindow, unloadPost);
     }
-    return EventsTimingHandler;
+    DataProvider.prototype.createInitPostObject = function (ev, isSoftNavigation) {
+        var postObj = this.createBasePostObj(ev, true, isSoftNavigation);
+        this.updatePerformanceMetrics(postObj);
+        var info = this.visitor.store;
+        if (info.exitToEntry > 0) {
+            postObj.exitToEntry = info.exitToEntry;
+        }
+        var entryToLoad = profiler.data.loadTime - profiler.data.start;
+        if (entryToLoad > 0) {
+            postObj.entryToOnLoad = entryToLoad;
+        }
+        if (document['webkitVisibilityState'] === 'prerender') {
+            postObj.prerender = 1;
+        }
+        if (hasPerformanceApi) {
+            var arr = void 0;
+            if (hasGetEntriesApi) {
+                // This is less than optimal but that's down to the API we're working with:
+                // https://developer.mozilla.org/en-US/docs/Web/API/Performance/getEntriesByType .
+                // We have to tell the TS compiler that we "know" the returned objects are in
+                // fact PerformanceResourceTiming's.
+                arr = pageWindow.performance.getEntriesByType('resource');
+                postObj.resources = arr;
+            }
+            if (ev != types_1.PostType.OnLoad) {
+                this.setClearResources();
+                if (config.clearResources && pageWindow.performance.clearResourceTimings) {
+                    pageWindow.performance.clearResourceTimings();
+                }
+                else {
+                    this.countResourcesSent = arr.length;
+                }
+            }
+        }
+        return postObj;
+    };
+    DataProvider.prototype.createDiffPostObject = function (ev, isSoftNavigation) {
+        var postObj = this.createBasePostObj(ev, false, isSoftNavigation);
+        this.updateResources(ev, postObj);
+        this.updateEngagementMetrics(postObj, isSoftNavigation);
+        this.addPerformanceMarksToPostData(pageWindow.performance, postObj);
+        var visComplete = this.getVisuallyComplete(isSoftNavigation);
+        if (visComplete) {
+            postObj.visComplete = visComplete;
+        }
+        if (profiler && profiler.getCPWebVitals) {
+            var cpWebVitals = profiler.getCPWebVitals();
+            if (cpWebVitals.cls) {
+                postObj.cls = cpWebVitals.cls;
+            }
+            if (cpWebVitals.lcp) {
+                postObj.lcp = cpWebVitals.lcp;
+            }
+            if (cpWebVitals.inp) {
+                postObj.inp = cpWebVitals.inp;
+            }
+        }
+        if (profiler.data.jsCount > 0) {
+            postObj.jsErrorCount = profiler.data.jsCount;
+            postObj.jsErrors = profiler.data.jsErrors;
+            profiler.clearErrors();
+        }
+        if (profiler && profiler.getAjaxRequests) {
+            var ajaxRequests = profiler.getAjaxRequests();
+            if (ajaxRequests) {
+                postObj.ajaxRequests = ajaxRequests.slice();
+                profiler.clearAjaxRequests();
+            }
+        }
+        return postObj;
+    };
+    DataProvider.prototype.createBasePostObj = function (ev, isNewPageView, isSoftNavigation) {
+        var postObj = new PostData_1.default();
+        postObj.postType = ev;
+        postObj.isNewPageView = isNewPageView;
+        postObj.siteId = config.siteId;
+        // We need to decode first because if the url is already encoded, it is getting double encoded
+        // Eg: if url is google.com/test%20me then encodeURI is converting to google.com/test%2520me
+        postObj.referrer = encodeURI(decodeURI(pageWindow.location.href));
+        postObj.sampleRate = config.sampleRate;
+        postObj.waterfallSampleRate = config.waterfallSampleRate;
+        var info = this.visitor.store;
+        postObj.userId = info.userId;
+        postObj.sessionId = info.sessionId;
+        postObj.pageViewId = info.pageViewId;
+        postObj.pageViewCount = info.pageViewCount;
+        postObj.viewCount = info.viewCount;
+        postObj.screenHeight = screen.height;
+        postObj.screenWidth = screen.width;
+        this.currentUrl = postObj.referrer;
+        if (ev === types_1.PostType.OnBeforeUnload || ev === types_1.PostType.OnAbort) {
+            postObj.referrer = this.currentUrl || encodeURI(decodeURI(pageWindow.location.href));
+        }
+        else {
+            postObj.referrer = encodeURI(decodeURI(pageWindow.location.href));
+        }
+        if (isSoftNavigation) {
+            postObj.isNewView = ev == types_1.PostType.OnLoad;
+        }
+        if (profiler.hasInsight) {
+            this.addInsightForPost(postObj);
+            profiler.clearInfo();
+        }
+        return postObj;
+    };
+    /**
+     * Iterate (if any) the "mark"'s (see https://www.w3.org/TR/user-timing/#extensions-performance-interface)
+     * that have been added to the page's Performance object. For each one, check if its one of the four standard
+     * ones that we capture. If it is, add it to the matching property in PostData. If there has been a soft
+     * navigation only capture marks that were set after it occurred.
+     * @param performance the w3.org Performance API object.
+     * @param postObj the DTO Post object we use to populate our POST to the Logger.
+     * @param isSoftNavigation true if this method is being invoked as part of a soft nav, false otherwise.
+     */
+    DataProvider.prototype.addPerformanceMarksToPostData = function (performance, postObj) {
+        if (hasPerformanceApi && performance.getEntriesByType) {
+            var marks = performance.getEntriesByType('mark');
+            if (marks && marks.length > 0 && marks.length < this.MaxNumberOfPerformanceMarks) {
+                var elapsedNavStartTime_1 = this.getElapsedTimeSinceLatestNavStart();
+                var validMarks = marks.filter(function (x) {
+                    return x.startTime != null && x.startTime >= elapsedNavStartTime_1;
+                });
+                for (var _i = 0, validMarks_1 = validMarks; _i < validMarks_1.length; _i++) {
+                    var mark = validMarks_1[_i];
+                    this.addMarkToPostData(mark, postObj);
+                }
+            }
+        }
+    };
+    /**
+     * Given a performance mark (see https://www.w3.org/TR/user-timing/#extensions-performance-interface),
+     * see if it's a standard one that we're interested in. If it is, set the matching PostData property.
+     * @param mark the performance mark set on the clients' page that we're interrogating
+     * @param postObj the DTO object into which we put the mark value
+     */
+    DataProvider.prototype.addMarkToPostData = function (mark, postObj) {
+        var markTime = Util_1.default.getRoundedValue(mark.startTime + mark.duration);
+        switch (mark.name) {
+            case 'mark_fully_loaded':
+                postObj.markFullyLoaded = markTime;
+                break;
+            case 'mark_fully_visible':
+                postObj.markFullyVisible = markTime;
+                break;
+            case 'mark_above_the_fold':
+                postObj.markAboveTheFold = markTime;
+                break;
+            case 'mark_time_to_user_action':
+                postObj.markTimeToUserAction = markTime;
+                break;
+            default:
+                break; // arriving here means it's a nonstandard mark that we don't care about
+        }
+    };
+    // @ts-ignore
+    DataProvider.prototype.getPaintTimings = function (paintTimings, type) {
+        var paintType = paintTimings.filter(function (x) { return x.name === type; });
+        if (paintType && paintType.length > 0 && paintType[0].startTime) {
+            return paintType[0].startTime;
+        }
+    };
+    DataProvider.prototype.setClearResources = function () {
+        if (!!pageWindow['__cpPreventResourceClear']) {
+            config.clearResources = pageWindow['__cpPreventResourceClear'] === false;
+        }
+    };
+    DataProvider.prototype.addInsightForPost = function (postObj) {
+        var insight = profiler.info;
+        for (var name_1 in insight) {
+            switch (name_1) {
+                case 'appError':
+                    var n = insight[name_1];
+                    if (n && typeof n == 'object') {
+                        var num;
+                        for (var key in n) {
+                            num = Number(key);
+                            if (isNaN(num)) {
+                                continue;
+                            }
+                            var tmp = n[key];
+                            if (tmp && typeof tmp == 'string') {
+                                var str = tmp;
+                                if (str.length > 32) {
+                                    str = str.substring(0, 32);
+                                }
+                                postObj.addError(key, str);
+                            }
+                        }
+                    }
+                    break;
+                case 'conversion':
+                    var n = insight[name_1];
+                    postObj.isConversion = true;
+                    if (n) {
+                        if (typeof n == 'object') {
+                            var num;
+                            for (var key in n) {
+                                num = Number(key);
+                                if (isNaN(num)) {
+                                    continue;
+                                }
+                                var tmp = n[key];
+                                if (tmp && typeof tmp == 'number') {
+                                    postObj.revenue = num;
+                                    postObj.revenueItems = tmp;
+                                }
+                            }
+                        }
+                    }
+                    break;
+                case 'indicator':
+                    var ind = this.buildInsight(insight[name_1], 0);
+                    if (ind[0]) {
+                        postObj.addIndicator(ind[1]);
+                    }
+                    break;
+                case 'tracepoint':
+                    var tra = this.buildInsight(insight[name_1], '');
+                    if (tra[0]) {
+                        postObj.addTracepoint(tra[1]);
+                    }
+                    break;
+                case 'pageGroup':
+                    var n = insight[name_1];
+                    if (n !== undefined && typeof n == 'string') {
+                        postObj.pageGroup = n;
+                    }
+                    break;
+                case 'variation':
+                    var n = insight[name_1];
+                    if (n !== undefined && typeof n == 'string') {
+                        postObj.variation = n;
+                    }
+                    break;
+            }
+        }
+    };
+    DataProvider.prototype.buildInsight = function (insight, expected) {
+        var obj = {};
+        var ret = false;
+        if (insight && typeof insight == 'object') {
+            for (var key in insight) {
+                if (key) {
+                    var n = insight[key];
+                    if (n != null && typeof n == typeof expected) {
+                        obj[key] = n;
+                        ret = true;
+                    }
+                }
+            }
+        }
+        if (!ret) {
+            return [ret, obj];
+        }
+        return [ret, obj];
+    };
+    DataProvider.prototype.makeRequest = function (type, postObj, sendWaterfall) {
+        var dataStr = postObj.toString(type, sendWaterfall);
+        if (pageWindow.navigator && typeof pageWindow.navigator['sendBeacon'] == 'function') {
+            pageWindow.navigator['sendBeacon'](this.postUrl, dataStr);
+        }
+        else {
+            var request = new XMLHttpRequest();
+            if (window.XDomainRequest) {
+                request = new window.XDomainRequest();
+                //Set all the fields so that the request can be made succesfully
+                request.timeout = 0;
+                request.onload = function () { };
+                request.onerror = function () { };
+                request.ontimeout = function () { };
+                request.onprogress = function () { };
+            }
+            request.open('POST', this.postUrl, false);
+            request.setRequestHeader
+                ? request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8')
+                : null;
+            request.send(dataStr);
+            request = null;
+        }
+    };
+    return DataProvider;
 }());
-exports["default"] = EventsTimingHandler;
+exports["default"] = DataProvider;
 
 
 /***/ }),
 
-/***/ "./src/rprofiler/InputDelayHandler.ts":
-/*!********************************************!*\
-  !*** ./src/rprofiler/InputDelayHandler.ts ***!
-  \********************************************/
+/***/ "./src/main/DataWrapper.ts":
+/*!*********************************!*\
+  !*** ./src/main/DataWrapper.ts ***!
+  \*********************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+var DataWrapper = /** @class */ (function () {
+    function DataWrapper() {
+        // insight
+        this.hasErrors = false;
+        this._appErrors = null;
+        this.hasIndicators = false;
+        this._indicators = null;
+        this.hasTracepoints = false;
+        this._tracepoints = null;
+    }
+    DataWrapper.prototype.addError = function (key, value) {
+        if (!this.hasErrors) {
+            this._appErrors = new Object();
+            this.hasErrors = true;
+        }
+        this._appErrors[key] = value;
+    };
+    DataWrapper.prototype.getErrors = function () {
+        return this._appErrors;
+    };
+    DataWrapper.prototype.addIndicator = function (obj) {
+        if (!this.hasIndicators) {
+            this._indicators = {};
+            this.hasIndicators = true;
+        }
+        for (var key in obj) {
+            this._indicators[key] = obj[key];
+        }
+    };
+    DataWrapper.prototype.getIndicators = function () {
+        return this._indicators;
+    };
+    DataWrapper.prototype.addTracepoint = function (obj) {
+        if (!this.hasTracepoints) {
+            this._tracepoints = {};
+            this.hasTracepoints = true;
+        }
+        for (var key in obj) {
+            this._tracepoints[key] = obj[key];
+        }
+    };
+    DataWrapper.prototype.getTracepoints = function () {
+        return this._tracepoints;
+    };
+    return DataWrapper;
+}());
+exports["default"] = DataWrapper;
+
+
+/***/ }),
+
+/***/ "./src/main/HostSummary.ts":
+/*!*********************************!*\
+  !*** ./src/main/HostSummary.ts ***!
+  \*********************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-var ProfilerEventManager_1 = __importDefault(__webpack_require__(/*! ./ProfilerEventManager */ "./src/rprofiler/ProfilerEventManager.ts"));
-var InputDelayHandler = /** @class */ (function () {
-    function InputDelayHandler() {
-        var _this = this;
-        this.firstInputDelay = 0;
-        this.firstInputTimeStamp = 0;
-        this.startTime = 0;
-        this.delay = 0;
-        this.profileManager = new ProfilerEventManager_1.default();
-        this.eventTypes = ['click', 'mousedown', 'keydown', 'touchstart', 'pointerdown'];
-        this.addEventListeners = function () {
-            _this.eventTypes.forEach(function (event) {
-                _this.profileManager.add(event, document, _this.onInput);
-            });
-        };
-        this.now = function () {
-            return new Date().getTime();
-        };
-        this.removeEventListeners = function () {
-            _this.eventTypes.forEach(function (event) {
-                _this.profileManager.remove(event, document, _this.onInput);
-            });
-        };
-        this.onInput = function (evt) {
-            // Only count cancelable events, which should trigger behavior
-            if (!evt.cancelable) {
+var types_1 = __webpack_require__(/*! ../types */ "./src/types.ts");
+var AjaxItem_1 = __importDefault(__webpack_require__(/*! ./AjaxItem */ "./src/main/AjaxItem.ts"));
+var Util_1 = __importDefault(__webpack_require__(/*! ./Util */ "./src/main/Util.ts"));
+var HostSummary = /** @class */ (function () {
+    function HostSummary() {
+        this.count = 0;
+        this.dns = null;
+        this.connect = null;
+        this.load = null;
+        this.wait = null;
+        this.duration = 0;
+        this.redirect = 0;
+        this.ssl = null;
+    }
+    HostSummary.prototype.addAjaxItem = function (timing, resource) {
+        this.update(resource);
+        var ajax = new AjaxItem_1.default(timing, resource, true);
+        if (typeof this._ajax == 'undefined') {
+            this._ajax = [];
+            this._ajax.push(ajax);
+            return;
+        }
+        for (var _i = 0, _a = this._ajax; _i < _a.length; _i++) {
+            var a = _a[_i];
+            if (a.url == ajax.url) {
+                a.update(timing, resource);
                 return;
             }
-            // In some browsers `event.timeStamp` returns a `DOMTimeStamp` value
-            // (epoch time) istead of the newer `DOMHighResTimeStamp`
-            // (document-origin time). To check for that we assume any timestamp
-            // greater than 1 trillion is a `DOMTimeStamp`, and compare it using
-            var isEpochTime = evt.timeStamp > 1e12;
-            _this.firstInputTimeStamp = _this.now();
-            var useFirstInputTime = isEpochTime || !window['performance'];
-            var now = useFirstInputTime ? _this.firstInputTimeStamp : window['performance'].now();
-            _this.delay = now - evt.timeStamp;
-            if (evt.type == 'pointerdown') {
-                _this.onPointerDown();
+        }
+        if (this._ajax.length < 10) {
+            this._ajax.push(ajax);
+        }
+    };
+    HostSummary.prototype.update = function (resource) {
+        var func = Util_1.default.getValue;
+        if (resource.responseStart) {
+            this.dns += func(resource, types_1.Metrics.DNS);
+            this.connect += func(resource, types_1.Metrics.Connect);
+            this.wait += func(resource, types_1.Metrics.Wait);
+            this.load += func(resource, types_1.Metrics.Load);
+            this.ssl += func(resource, types_1.Metrics.SSL);
+        }
+        this.duration += func(resource, types_1.Metrics.Duration);
+        this.redirect += func(resource, types_1.Metrics.Redirect);
+        this.count++;
+    };
+    HostSummary.prototype.translateForPost = function () {
+        var roundedValue = Util_1.default.getRoundedValue;
+        var obj = {
+            n: this.count,
+            dn: roundedValue(this.dns),
+            fc: roundedValue(this.connect),
+            ld: roundedValue(this.load),
+            wt: roundedValue(this.wait),
+            dr: roundedValue(this.duration),
+            rd: roundedValue(this.redirect),
+            ssl: roundedValue(this.ssl)
+        };
+        if (this._ajax) {
+            var ajax = [];
+            for (var _i = 0, _a = this._ajax; _i < _a.length; _i++) {
+                var a = _a[_i];
+                ajax.push(a.translateForPost());
+            }
+            obj['ax'] = ajax;
+        }
+        return obj;
+    };
+    return HostSummary;
+}());
+exports["default"] = HostSummary;
+
+
+/***/ }),
+
+/***/ "./src/main/HostWaterfall.ts":
+/*!***********************************!*\
+  !*** ./src/main/HostWaterfall.ts ***!
+  \***********************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.HostWaterfall = void 0;
+var AjaxItem_1 = __importDefault(__webpack_require__(/*! ./AjaxItem */ "./src/main/AjaxItem.ts"));
+var WaterfallItem_1 = __importDefault(__webpack_require__(/*! ./WaterfallItem */ "./src/main/WaterfallItem.ts"));
+var HostWaterfall = /** @class */ (function () {
+    function HostWaterfall() {
+        this._resources = [];
+    }
+    HostWaterfall.prototype.translateForPost = function () {
+        var a = [];
+        for (var _i = 0, _a = this._resources; _i < _a.length; _i++) {
+            var res = _a[_i];
+            a.push(res.translateForPost());
+        }
+        return a;
+    };
+    HostWaterfall.prototype.addItem = function (resource) {
+        var item = new WaterfallItem_1.default(resource);
+        this._resources.push(item);
+    };
+    HostWaterfall.prototype.addAjaxItem = function (timing, resource) {
+        var ajax = new AjaxItem_1.default(timing, resource, false);
+        this._resources.push(ajax);
+    };
+    return HostWaterfall;
+}());
+exports.HostWaterfall = HostWaterfall;
+
+
+/***/ }),
+
+/***/ "./src/main/PerformanceObserver.ts":
+/*!*****************************************!*\
+  !*** ./src/main/PerformanceObserver.ts ***!
+  \*****************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+var Util_1 = __importDefault(__webpack_require__(/*! ./Util */ "./src/main/Util.ts"));
+var main_1 = __importDefault(__webpack_require__(/*! ./main */ "./src/main/main.ts"));
+var pageWindow = main_1.default.pageWindow;
+var PerformanceObserver = /** @class */ (function () {
+    function PerformanceObserver(isSoftnav) {
+        var _this = this;
+        this.longTaskEndTime = 0;
+        this.waitTime = 5000;
+        this.performanceObserverApi = pageWindow['PerformanceObserver'];
+        this.performanceLongTaskTiming = pageWindow['PerformanceLongTaskTiming'];
+        this.nowTime = 0;
+        this.isSoftnav = false;
+        this.getDomContentLoad = function () {
+            var timing = Util_1.default.getNavigationTime();
+            if (timing) {
+                var navStart = Util_1.default.getNavigationStart(timing);
+                var domContentLoad = Util_1.default.getMetricValue(timing.domContentLoadedEventEnd, navStart);
+                return domContentLoad;
+            }
+        };
+        this.observeLongTask = function (entries) {
+            for (var i = 0; i < entries.length; i++) {
+                var currEntry = entries[i];
+                var startTime = _this.isSoftnav ? currEntry.startTime - _this.nowTime : currEntry.startTime;
+                var idleTimeBetweenLongTasks = startTime - _this.longTaskEndTime;
+                if (idleTimeBetweenLongTasks >= _this.waitTime) {
+                    _this.performanceObserver.disconnect();
+                }
+                else {
+                    _this.setLongTaskTime(currEntry);
+                }
+            }
+        };
+        this.setLongTaskTime = function (entry) {
+            var newLongTaskTime = Math.round(entry.startTime + entry.duration);
+            _this.longTaskEndTime = newLongTaskTime;
+        };
+        this.getLongTaskTime = function () {
+            return _this.longTaskEndTime;
+        };
+        if (this.performanceLongTaskTiming) {
+            // setting default TTI as domContentLoad on Load (not soft navigation).
+            this.isSoftnav = isSoftnav;
+            this.nowTime = pageWindow.performance.now();
+            var domContentLoad = this.getDomContentLoad();
+            if (!isSoftnav) {
+                this.longTaskEndTime = domContentLoad;
+            }
+            this.observe(['longtask'], this.observeLongTask);
+        }
+    }
+    PerformanceObserver.prototype.observe = function (entryTypes, callBack) {
+        if (this.performanceObserverApi) {
+            // @ts-ignore
+            this.performanceObserver = new this.performanceObserverApi(function (list, obj) {
+                var entries = list.getEntries();
+                callBack(entries);
+            });
+            this.performanceObserver.observe({ entryTypes: entryTypes });
+        }
+    };
+    return PerformanceObserver;
+}());
+exports["default"] = PerformanceObserver;
+
+
+/***/ }),
+
+/***/ "./src/main/PostData.ts":
+/*!******************************!*\
+  !*** ./src/main/PostData.ts ***!
+  \******************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+var types_1 = __webpack_require__(/*! ../types */ "./src/types.ts");
+var DataWrapper_1 = __importDefault(__webpack_require__(/*! ./DataWrapper */ "./src/main/DataWrapper.ts"));
+var HostSummary_1 = __importDefault(__webpack_require__(/*! ./HostSummary */ "./src/main/HostSummary.ts"));
+var HostWaterfall_1 = __webpack_require__(/*! ./HostWaterfall */ "./src/main/HostWaterfall.ts");
+var Tree_1 = __importDefault(__webpack_require__(/*! ./Tree */ "./src/main/Tree.ts"));
+var main_1 = __importDefault(__webpack_require__(/*! ./main */ "./src/main/main.ts"));
+var config = main_1.default.config, version = main_1.default.version;
+var PostData = /** @class */ (function (_super) {
+    __extends(PostData, _super);
+    function PostData() {
+        var _this = _super !== null && _super.apply(this, arguments) || this;
+        _this.maxJsErrors = 10;
+        _this.charCodes = {
+            '\b': '\\b',
+            '\t': '\\t',
+            '\n': '\\n',
+            '\f': '\\f',
+            '\r': '\\r',
+            '"': '\\"',
+            '\\': '\\\\',
+            '&': '%26'
+        };
+        _this.strRegex = /["&\\\x00-\x1f\x7f-\x9f]/g;
+        return _this;
+    }
+    PostData.prototype.toString = function (type, includeWaterfall) {
+        var obj = this.translateForPost(type, includeWaterfall);
+        if (typeof JSON == 'undefined') {
+            return this.jsonStringify(obj);
+        }
+        return JSON.stringify(obj);
+    };
+    PostData.prototype.strEscape = function (value) {
+        var char = this.charCodes[value];
+        if (char) {
+            return char;
+        }
+        var index = value.charCodeAt(0);
+        return '\\u00' + Math.floor(index / 16).toString(16) + (index % 16).toString(16);
+    };
+    PostData.prototype.jsonStringify = function (value) {
+        var arr = new Array();
+        switch (typeof value) {
+            case 'string':
+                return this.strRegex.test(value)
+                    ? '"' + value.replace(this.strRegex, this.strEscape) + '"'
+                    : '"' + value + '"';
+            case 'number':
+                return isFinite(value) ? String(value) : 'null';
+            case 'boolean':
+                return String(value);
+            case 'object':
+                if (!value) {
+                    return 'null';
+                }
+                if (value.constructor === Date) {
+                }
+                if (typeof value.length == 'number' && !value.propertyIsEnumerable('length')) {
+                    for (var _i = 0, _a = value; _i < _a.length; _i++) {
+                        var a = _a[_i];
+                        arr.push(this.jsonStringify(a));
+                    }
+                    return '[' + arr.join(',') + ']';
+                }
+                for (var key in value) {
+                    if (typeof key == 'string') {
+                        var str = this.jsonStringify(value[key]);
+                        if (!!str) {
+                            arr.push(this.jsonStringify(key) + ':' + str);
+                        }
+                    }
+                }
+                return '{' + arr.join(',') + '}';
+        }
+        return '';
+    };
+    PostData.prototype.translateForPost = function (type, includeWaterfall) {
+        var isSoftNavigation = this.viewCount > 1;
+        var obj = new Object();
+        obj['v'] = version;
+        obj['pt'] = this.postType;
+        obj['ui'] = this.userId;
+        obj['si'] = this.sessionId;
+        obj['di'] = this.siteId;
+        obj['pi'] = this.pageViewId;
+        obj['jsc'] = this.jsErrorCount || 0;
+        obj['rf'] = this.referrer;
+        obj['pc'] = this.pageViewCount;
+        obj['vc'] = this.viewCount;
+        obj['rc'] = this.redirectCount || 0;
+        if (this.jsErrors && this.jsErrors.length > 0) {
+            var arr = [];
+            for (var i = 0; i < Math.min(this.jsErrors.length, this.maxJsErrors); i++) {
+                arr.push(this.translateErrorForPost(this.jsErrors[i]));
+            }
+            obj['jse'] = arr;
+        }
+        if (this.hasErrors) {
+            obj['ae'] = this.getErrors();
+        }
+        if (this.pageGroup) {
+            obj['pg'] = this.pageGroup;
+        }
+        if (this.variation) {
+            obj['ab'] = this.variation;
+        }
+        if (this.resources || this.ajaxRequests) {
+            var r = this.translateResources(this.resources, this.ajaxRequests);
+            obj['res'] = r.summary;
+            if (includeWaterfall) {
+                obj['wf'] = r.waterfall;
+            }
+        }
+        if (typeof this.isNewView == 'boolean') {
+            obj['nv'] = this.isNewView ? 1 : 0;
+        }
+        if (this.hasIndicators) {
+            obj['ind'] = this.getIndicators();
+        }
+        if (this.hasTracepoints) {
+            obj['tra'] = this.getTracepoints();
+        }
+        if (this.isConversion) {
+            obj['cv'] = this.isConversion ? 1 : 0;
+            if (this.revenue) {
+                obj['rv'] = this.revenue;
+            }
+            if (this.revenueItems) {
+                obj['ri'] = this.revenueItems;
+            }
+        }
+        obj['np'] = this.isNewPageView ? 1 : 0;
+        if (type === types_1.PostType.OnLoad || type === types_1.PostType.OnAbort) {
+            obj['dh'] = this.screenHeight;
+            obj['dw'] = this.screenWidth;
+            if (this.isNewPageView) {
+                obj['dn'] = Math.round(this.dns);
+                obj['fc'] = Math.round(this.fullConnect);
+                obj['wt'] = Math.round(this.wait);
+                obj['ld'] = Math.round(this.load);
+                obj['de'] = this.domInteractive;
+                obj['dl'] = this.domLoaded;
+                obj['dc'] = this.docComplete;
+                obj['rp'] = this.response;
+                obj['cl'] = this.contentLoad;
+                obj['rd'] = this.redirect;
+                obj['rc'] = this.redirectCount || 0;
+                obj['cls'] = this.cls;
+                obj['lcp'] = this.lcp;
+                obj['inp'] = this.inp;
+                if (this.secureConnect) {
+                    obj['sc'] = this.secureConnect;
+                }
+                if (this.exitToEntry) {
+                    obj['xe'] = this.exitToEntry;
+                }
+                if (this.entryToOnLoad) {
+                    obj['el'] = this.entryToOnLoad;
+                }
+                if (this.prerender) {
+                    obj['pr'] = this.prerender;
+                }
+            }
+        }
+        if (type === types_1.PostType.OnBeforeUnload) {
+            obj['maf'] = this.markAboveTheFold;
+            obj['mfl'] = this.markFullyLoaded;
+            obj['mfv'] = this.markFullyVisible;
+            obj['mtu'] = this.markTimeToUserAction;
+            obj['tp'] = this.timeOnPage;
+            obj['tti'] = this.timeToInteract;
+            obj['et'] = this.engagementTime;
+            obj['fet'] = this.firstEngagementTime;
+            obj['fid'] = this.firstInputDelay;
+            obj['vct'] = this.visComplete;
+            obj['fid'] = this.firstInputDelay;
+            if (!isSoftNavigation) {
+                obj['fp'] = this.firstPaint;
+                obj['fcp'] = this.firstContentPaint;
+                obj['cls'] = this.cls;
+                obj['lcp'] = this.lcp;
+                obj['inp'] = this.inp;
+            }
+        }
+        return obj;
+    };
+    PostData.prototype.translateErrorForPost = function (error) {
+        var obj = {};
+        obj['m'] = error.message;
+        obj['n'] = error.lineNumber;
+        obj['c'] = error.count + 1; // starts at 0
+        var url = error.url;
+        if (url) {
+            var qStrIndex = url.indexOf('?');
+            if (qStrIndex != -1) {
+                url = url.substr(0, qStrIndex);
+            }
+        }
+        obj['u'] = url;
+        return obj;
+    };
+    PostData.prototype.translateResources = function (resources, ajaxResources) {
+        var _this = this;
+        var hasResources = !!resources;
+        var hasAjaxResources = !!ajaxResources;
+        if (!hasResources && !hasAjaxResources) {
+            return null;
+        }
+        var getAjaxTiming = function (resource) {
+            if (!hasResources || !hasAjaxResources) {
+                return null;
+            }
+            var filteredAjaxResources = _this.filterAjaxResources(ajaxResources);
+            for (var _i = 0, filteredAjaxResources_1 = filteredAjaxResources; _i < filteredAjaxResources_1.length; _i++) {
+                var a = filteredAjaxResources_1[_i];
+                var url = a.url;
+                var targetUrl = '';
+                if (url && url.indexOf('http') != 0) {
+                    var charCount = 0;
+                    var mainUrl = location.href;
+                    for (var i_1 = 0; i_1 < mainUrl.length; i_1++) {
+                        if (mainUrl[i_1] === '/') {
+                            charCount += 1;
+                        }
+                        if (charCount === 3) {
+                            targetUrl = mainUrl.slice(0, i_1);
+                            targetUrl = targetUrl + url;
+                            break;
+                        }
+                    }
+                    if (targetUrl === resource.name) {
+                        return a;
+                    }
+                }
+                if (url === resource.name) {
+                    return a;
+                }
+            }
+            return null;
+        };
+        var hostObj = {};
+        if (resources) {
+            for (var _i = 0, resources_1 = resources; _i < resources_1.length; _i++) {
+                var res = resources_1[_i];
+                if (!res) {
+                    continue;
+                }
+                var host = res.name.split('/').slice(1, 3).join('');
+                if (!host || host.length == 0) {
+                    continue;
+                }
+                var portIndex = host.indexOf(':');
+                if (portIndex != -1) {
+                    host = host.substr(0, portIndex);
+                }
+                if (!hostObj.hasOwnProperty(host)) {
+                    hostObj[host] = {
+                        summary: new HostSummary_1.default(),
+                        waterfall: new HostWaterfall_1.HostWaterfall()
+                    };
+                }
+                var h = hostObj[host];
+                var ajax = getAjaxTiming(res);
+                if (ajax) {
+                    h.summary.addAjaxItem(ajax, res);
+                    h.waterfall.addAjaxItem(ajax, res);
+                }
+                else {
+                    h.summary.update(res);
+                    h.waterfall.addItem(res);
+                }
+            }
+        }
+        var tree1 = new Tree_1.default();
+        for (var name in hostObj) {
+            var node = undefined;
+            for (var i = name.length - 1; i >= 0; i--) {
+                var char = name[i];
+                node = tree1.add(node, char);
+            }
+            node.data = hostObj[name].summary.translateForPost();
+        }
+        var tree2 = new Tree_1.default();
+        for (var name in hostObj) {
+            var node = undefined;
+            for (var i = name.length - 1; i >= 0; i--) {
+                var char = name[i];
+                node = tree2.add(node, char);
+            }
+            node.data = hostObj[name].waterfall.translateForPost();
+        }
+        var container = {
+            summary: tree1.toObject(),
+            waterfall: tree2.toObject()
+        };
+        return container;
+    };
+    PostData.prototype.filterAjaxResources = function (ajaxResources) {
+        if (config.ajaxDomains === '' || config.ajaxDomains === undefined) {
+            return ajaxResources;
+        }
+        // Returns the host with subdomain from the url
+        var getHostNameWithSubdomain = function (url) {
+            var regex = /^(?:https?:\/\/)?(?:[^@\/\n]+@)?(?:www\.)?([^:\/?\n]+)/;
+            var output = regex.exec(url);
+            if (output !== null) {
+                return output[1];
+            }
+        };
+        // Returns the host without subdomain from the url
+        var getHostNameWithoutSubdomain = function (url) {
+            var regex = /([a-z\-0-9]{2,63})\.([a-z\.]{2,5})$/;
+            var urlParts = regex.exec(url);
+            return urlParts && urlParts[0];
+        };
+        // Returns the url with protocal
+        var getFullUrl = function (url) {
+            var regex = /(http|https)?:\/\/(\S+)/g;
+            var hasSchema = regex.test(url);
+            return hasSchema ? url : "https://".concat(url);
+        };
+        var filterAjaxDomainsList = config.ajaxDomains.split(',');
+        var filteredAjaxResources = ajaxResources.filter(function (resource) {
+            var resourceWithSubdomain = getHostNameWithSubdomain(resource.url);
+            var resourceUrl = getFullUrl(resource.url);
+            var resourceHostName = new URL(resourceUrl).host;
+            var resourceWithoutSubdomain = getHostNameWithoutSubdomain(resourceHostName);
+            var result = filterAjaxDomainsList.some(function (domain) {
+                var domainUrl = getFullUrl(domain);
+                var filterHostName = new URL(domainUrl).host;
+                var filterDomainWithSubdomain = filterHostName.replace('www.', '');
+                var filterDomainWithoutSubdomain = getHostNameWithoutSubdomain(filterHostName);
+                var hasFilterSubdomain = filterDomainWithSubdomain !== filterDomainWithoutSubdomain;
+                if (hasFilterSubdomain) {
+                    return filterDomainWithSubdomain === resourceWithSubdomain;
+                }
+                else {
+                    return resourceWithoutSubdomain === filterDomainWithoutSubdomain;
+                }
+            });
+            return result;
+        });
+        return filteredAjaxResources;
+    };
+    return PostData;
+}(DataWrapper_1.default));
+exports["default"] = PostData;
+
+
+/***/ }),
+
+/***/ "./src/main/Storage.ts":
+/*!*****************************!*\
+  !*** ./src/main/Storage.ts ***!
+  \*****************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+var main_1 = __importDefault(__webpack_require__(/*! ./main */ "./src/main/main.ts"));
+var pageWindow = main_1.default.pageWindow;
+var Storage = /** @class */ (function () {
+    function Storage() {
+    }
+    Storage.save = function (value) {
+        if (Storage.canUseLocalStorage()) {
+            pageWindow.localStorage.setItem(Storage.storeKey, value);
+            return;
+        }
+        Storage.setCookie(value);
+    };
+    Storage.read = function () {
+        if (Storage.canUseLocalStorage()) {
+            var store = pageWindow.localStorage.getItem(Storage.storeKey);
+            if (store) {
+                return store;
+            }
+        }
+        return this.readCookie();
+    };
+    Storage.canUseLocalStorage = function () {
+        var canUse = true;
+        try {
+            var key = Storage.storeKey + 'delete';
+            var value = key + 0;
+            pageWindow.localStorage.setItem(key, value);
+            var valueFromStorage = pageWindow.localStorage.getItem(key);
+            canUse = value === valueFromStorage;
+            if (canUse) {
+                pageWindow.localStorage.removeItem(key);
+            }
+        }
+        catch (ex) {
+            canUse = false;
+        }
+        return canUse;
+    };
+    Storage.setCookie = function (value) {
+        var date = new Date();
+        date.setTime(date.getTime() + Storage.cookieExpireDays * 24 * 60 * 60 * 1000);
+        var expires = '; expires=' + date.toUTCString();
+        var split = pageWindow.document.domain.split('.');
+        var length = split.length;
+        var domain = split[length - 2] + '.' + split[length - 1];
+        document.cookie =
+            Storage.storeKey +
+                '=' +
+                encodeURIComponent(value) +
+                expires +
+                '; path=/; domain=' +
+                domain +
+                '; SameSite=Lax;';
+    };
+    Storage.readCookie = function () {
+        var split = pageWindow.document.cookie.split(';');
+        var regex = Storage.storeRegex;
+        for (var _i = 0, split_1 = split; _i < split_1.length; _i++) {
+            var c = split_1[_i];
+            if (regex.test(c)) {
+                return decodeURIComponent(c.substring(c.indexOf('=') + 1, c.length));
+            }
+        }
+        return '';
+    };
+    Storage.cookieExpireDays = 365;
+    Storage.storeKey = '__CG';
+    Storage.storeRegex = new RegExp('^(\\s)*' + Storage.storeKey + '=', 'i');
+    return Storage;
+}());
+exports["default"] = Storage;
+
+
+/***/ }),
+
+/***/ "./src/main/Tree.ts":
+/*!**************************!*\
+  !*** ./src/main/Tree.ts ***!
+  \**************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+var TreeNode_1 = __importDefault(__webpack_require__(/*! ./TreeNode */ "./src/main/TreeNode.ts"));
+var Tree = /** @class */ (function () {
+    function Tree() {
+        this.root = new TreeNode_1.default('');
+        this.isReversed = true;
+    }
+    Tree.prototype.add = function (parent, char) {
+        if (parent === void 0) { parent = this.root; }
+        var children = parent.children;
+        for (var _i = 0, children_1 = children; _i < children_1.length; _i++) {
+            var child = children_1[_i];
+            if (child.char == char) {
+                return child;
+            }
+        }
+        var node = new TreeNode_1.default(char);
+        children.push(node);
+        node.parent = parent;
+        return node;
+    };
+    Tree.prototype.toObject = function () {
+        var obj = {};
+        var isSuffix = this.isReversed;
+        (function recurse(curr, obj) {
+            var isRoot = curr.char == '';
+            var arg;
+            if (isRoot) {
+                arg = obj;
             }
             else {
-                _this.removeEventListeners();
-                _this.updateFirstInputDelay();
+                var key = curr.char;
+                if (curr.children.length == 1) {
+                    while (curr.children.length == 1) {
+                        curr = curr.children[0];
+                        key = isSuffix ? curr.char + key : key + curr.char;
+                        if (curr.data) {
+                            obj[key] = curr.data;
+                        }
+                    }
+                }
+                obj[key] = curr.data || {};
+                arg = obj[key];
             }
-        };
-        this.onPointerUp = function () {
-            _this.removeEventListeners();
-            _this.updateFirstInputDelay();
-        };
-        this.onPointerCancel = function () {
-            _this.removePointerEventListeners();
-        };
-        this.removePointerEventListeners = function () {
-            _this.profileManager.remove('pointerup', document, _this.onPointerUp);
-            _this.profileManager.remove('pointercancel', document, _this.onPointerCancel);
-        };
-        this.updateFirstInputDelay = function () {
-            if (_this.delay >= 0 && _this.delay < _this.firstInputTimeStamp - _this.startTime) {
-                _this.firstInputDelay = Math.round(_this.delay);
+            for (var i = 0; i < curr.children.length; i++) {
+                recurse(curr.children[i], arg);
             }
-        };
-        this.startSoftNavigationCapture = function () {
-            _this.resetSoftNavigationCapture();
-        };
-        this.resetSoftNavigationCapture = function () {
-            _this.resetFirstInputDelay();
-            _this.addEventListeners();
-        };
-        this.resetFirstInputDelay = function () {
-            _this.delay = 0;
-            _this.firstInputDelay = 0;
-            _this.startTime = 0;
-            _this.firstInputTimeStamp = 0;
-        };
-        this.startTime = this.now();
-        this.addEventListeners();
-    }
-    InputDelayHandler.prototype.onPointerDown = function () {
-        this.profileManager.add('pointerup', document, this.onPointerUp);
-        this.profileManager.add('pointercancel', document, this.onPointerCancel);
+        })(this.root, obj);
+        return obj;
     };
-    InputDelayHandler.prototype.getFirstInputDelay = function () {
-        return this.firstInputDelay;
-    };
-    return InputDelayHandler;
+    return Tree;
 }());
-exports["default"] = InputDelayHandler;
+exports["default"] = Tree;
 
 
 /***/ }),
 
-/***/ "./src/rprofiler/ProfilerEventManager.ts":
-/*!***********************************************!*\
-  !*** ./src/rprofiler/ProfilerEventManager.ts ***!
-  \***********************************************/
+/***/ "./src/main/TreeNode.ts":
+/*!******************************!*\
+  !*** ./src/main/TreeNode.ts ***!
+  \******************************/
 /***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-var ProfilerEventManager = /** @class */ (function () {
-    function ProfilerEventManager() {
-        this.events = [];
-        this.hasAttachEvent = !!window['attachEvent'];
+var TreeNode = /** @class */ (function () {
+    function TreeNode(char) {
+        this.char = char;
+        this.children = [];
     }
-    ProfilerEventManager.prototype.add = function (type, target, func) {
-        this.events.push({ type: type, target: target, func: func });
-        if (this.hasAttachEvent) {
-            target.attachEvent('on' + type, func);
-        }
-        else {
-            target.addEventListener(type, func, false);
-        }
-    };
-    ProfilerEventManager.prototype.remove = function (type, target, func) {
-        if (this.hasAttachEvent) {
-            target.detachEvent(type, func);
-        }
-        else {
-            target.removeEventListener(type, func, false);
-        }
-        var index = this.events.indexOf({ type: type, target: target, func: func });
-        if (index !== 1) {
-            this.events.splice(index, 1);
-        }
-    };
-    ProfilerEventManager.prototype.clear = function () {
-        var events = this.events;
-        for (var i = 0; i < events.length; i++) {
-            var ev = events[i];
-            this.remove(ev.type, ev.target, ev.func);
-        }
-        this.events = [];
-    };
-    return ProfilerEventManager;
+    return TreeNode;
 }());
-exports["default"] = ProfilerEventManager;
+exports["default"] = TreeNode;
 
 
 /***/ }),
 
-/***/ "./src/rprofiler/ProfilerJsError.ts":
-/*!******************************************!*\
-  !*** ./src/rprofiler/ProfilerJsError.ts ***!
-  \******************************************/
-/***/ ((__unused_webpack_module, exports) => {
+/***/ "./src/main/Util.ts":
+/*!**************************!*\
+  !*** ./src/main/Util.ts ***!
+  \**************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-var ProfilerJsError = /** @class */ (function () {
-    function ProfilerJsError(message, url, lineNumber) {
-        this.count = 0;
-        this.message = message;
-        this.url = url;
-        this.lineNumber = lineNumber;
+var types_1 = __webpack_require__(/*! ../types */ "./src/types.ts");
+var main_1 = __importDefault(__webpack_require__(/*! ./main */ "./src/main/main.ts"));
+var hasGetEntriesApi = main_1.default.hasGetEntriesApi, pageWindow = main_1.default.pageWindow, protocol = main_1.default.protocol, profiler = main_1.default.profiler;
+var Util = /** @class */ (function () {
+    function Util() {
     }
-    ProfilerJsError.createText = function (msg, url, num) {
-        return [msg, url, num].join(':');
+    Util.getValue = function (resource, metric) {
+        var allowOrigin = resource.responseStart !== 0;
+        switch (metric) {
+            case types_1.Metrics.DNS:
+                return Util.getMetricValue(resource.domainLookupEnd, resource.domainLookupStart, allowOrigin);
+            case types_1.Metrics.Connect:
+                return Util.getMetricValue(resource.connectEnd, resource.connectStart, allowOrigin);
+            case types_1.Metrics.Load:
+                return Util.getMetricValue(resource.responseEnd, resource.responseStart, allowOrigin);
+            case types_1.Metrics.Wait:
+                return Util.getMetricValue(resource.responseStart, resource.requestStart, allowOrigin);
+            case types_1.Metrics.Start:
+                return resource.startTime;
+            case types_1.Metrics.Redirect:
+                return Util.getMetricValue(resource.redirectEnd, resource.redirectStart);
+            case types_1.Metrics.Duration:
+                return resource.duration;
+            case types_1.Metrics.SSL:
+                if (resource['secureConnectionStart']) {
+                    return allowOrigin ? resource.connectEnd - resource['secureConnectionStart'] : null;
+                }
+                break;
+        }
+        return 0;
     };
-    ProfilerJsError.prototype.getText = function () {
-        return ProfilerJsError.createText(this.message, this.url, this.lineNumber);
+    Util.getMetricValue = function (end, start, allowOrigin) {
+        if (allowOrigin === void 0) { allowOrigin = true; }
+        if (!allowOrigin) {
+            return null;
+        }
+        else if (end >= 0 && end >= start && start >= 0) {
+            var value = end - start;
+            return Math.round(value);
+        }
     };
-    return ProfilerJsError;
+    Util.getRoundedValue = function (value) {
+        return value ? Math.round(value) : value;
+    };
+    Util.addScriptTag = function (url, scope) {
+        var script = scope.document.createElement('script');
+        script.type = 'text/javascript';
+        script.src = protocol + url;
+        scope.document.body.appendChild(script);
+    };
+    Util.getQueryStringValue = function (val) {
+        var query = location.search.substring(1);
+        var values = query.split('&');
+        var arr;
+        for (var i = 0; i < values.length; i++) {
+            arr = values[i].split('=');
+            if (arr[0] == val) {
+                return arr[1];
+            }
+        }
+        return '';
+    };
+    Util.stopEvents = function () {
+        if (!profiler) {
+            return;
+        }
+        profiler.eventManager.clear();
+        profiler.getEventTimingHandler().clear();
+    };
+    Util.getNavigationTime = function () {
+        var timing = null;
+        var navigationTime = hasGetEntriesApi && pageWindow.performance.getEntriesByType('navigation');
+        if (navigationTime && navigationTime.length !== 0) {
+            timing = navigationTime[0];
+        }
+        return timing;
+    };
+    Util.getNavigationStart = function (timing) {
+        var navigationtiming = timing;
+        return navigationtiming.startTime;
+    };
+    return Util;
 }());
-exports["default"] = ProfilerJsError;
+exports["default"] = Util;
 
 
 /***/ }),
 
-/***/ "./src/rprofiler/rprofiler.ts":
+/***/ "./src/main/Visitor.ts":
+/*!*****************************!*\
+  !*** ./src/main/Visitor.ts ***!
+  \*****************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+var VisitorStorage_1 = __importDefault(__webpack_require__(/*! ./VisitorStorage */ "./src/main/VisitorStorage.ts"));
+var main_1 = __importDefault(__webpack_require__(/*! ./main */ "./src/main/main.ts"));
+var config = main_1.default.config, profiler = main_1.default.profiler, testUserId = main_1.default.testUserId, pageWindow = main_1.default.pageWindow;
+var Visitor = /** @class */ (function () {
+    function Visitor() {
+        this.sessionExpire = 30 * 60 * 1000;
+        this.store = new VisitorStorage_1.default();
+    }
+    Visitor.prototype.updateSessionTime = function () {
+        if (!this.store) {
+            return;
+        }
+        var time = new Date().getTime();
+        if (time - this.store.sessionTime > this.sessionExpire) {
+            this.store.sessionId = 0;
+        }
+        this.store.sessionTime = time;
+        this.updateStore();
+    };
+    Visitor.prototype.updateStore = function () {
+        if (!this.store) {
+            return;
+        }
+        this.store.save();
+    };
+    Visitor.prototype.initStore = function () {
+        var hasStoredValue = this.store.load();
+        if (!hasStoredValue) {
+            return;
+        }
+    };
+    Visitor.prototype.checkAndResetPostFlags = function () {
+        this.store.postFlag = 0;
+        if (config.sampleRate < 0) {
+            this.store.postFlag = -1;
+            return;
+        }
+        var rate = this.getUserId(config.sampleRate / 100);
+        if (this.store.userId <= rate) {
+            this.store.postFlag = 1;
+            var waterfallRate = rate / (100 / config.waterfallSampleRate);
+            this.store.sendWaterfall = this.store.userId <= waterfallRate;
+        }
+    };
+    Visitor.prototype.getReferrer = function (url) {
+        var host = this.getHostName(url).replace(':', '-');
+        var index = url.indexOf('?');
+        var n = 0;
+        for (var i = host.length; i < url.length; i++) {
+            n += url.charCodeAt(i) % i;
+        }
+        return host + '/' + (index < 0 ? url.length : index) + '/' + url.length + '/' + n;
+    };
+    Visitor.prototype.getHostName = function (url) {
+        var start = url.indexOf('//') + 2;
+        var end = url.indexOf('/', start);
+        if (start < 2 && end == -1) {
+            return url;
+        }
+        if (end == -1) {
+            end = url.length;
+        }
+        return url.substring(start, end);
+    };
+    Visitor.prototype.init = function () {
+        var start = profiler.data.start;
+        this.initStore();
+        if (this.store.userId == -1 || this.store.userId == testUserId) {
+            this.store.userId = this.getUserId();
+        }
+        this.checkAndResetPostFlags();
+        if (this.store.sessionId == 0 || start - this.store.sessionTime > this.sessionExpire) {
+            this.store.sessionId = Math.floor(1 + Math.random() * ((Math.pow(2, 32) - 2) / 2));
+            this.store.pageViewCount = 1;
+        }
+        else {
+            if (this.store.pageViewCount < 65535) {
+                this.store.pageViewCount++;
+            }
+            if (this.getReferrer(pageWindow.document.referrer) == this.store.urlCheckSum &&
+                this.store.sessionTime > 0) {
+                this.store.exitToEntry = start - this.store.sessionTime;
+            }
+        }
+        this.store.sessionTime = new Date().getTime();
+        this.store.pageViewId = Math.floor(1 + Math.random() * ((Math.pow(2, 16) - 2) / 2));
+        this.store.urlCheckSum = this.getReferrer(pageWindow.location.href);
+        this.store.resetViewCount();
+        this.updateStore();
+        var hasVisitorData = this.store.load();
+        return hasVisitorData;
+    };
+    //This method is used for 2 purpose
+    // 1. When the userId is -1 (no id assigned for user), user id is created randomly. So method is called without a param
+    // 2. A seed is used when we sample the user and sample rate is passed as param in that case.
+    // This logic for sampling is happening in Core as well. Any changes in this method should be approved by Core as well.
+    Visitor.prototype.getUserId = function (seed) {
+        if (seed === void 0) { seed = Math.random(); }
+        var userId = Math.floor(1 + seed * ((Math.pow(2, 64) - 2) / 2));
+        return userId;
+    };
+    Visitor.prototype.shouldPost = function () {
+        return this.store.postFlag == 1;
+    };
+    return Visitor;
+}());
+exports["default"] = Visitor;
+
+
+/***/ }),
+
+/***/ "./src/main/VisitorStorage.ts":
 /*!************************************!*\
-  !*** ./src/rprofiler/rprofiler.ts ***!
+  !*** ./src/main/VisitorStorage.ts ***!
   \************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-var web_vitals_1 = __webpack_require__(/*! web-vitals */ "./node_modules/web-vitals/dist/web-vitals.umd.cjs");
 var types_1 = __webpack_require__(/*! ../types */ "./src/types.ts");
-var AjaxRequestsHandler_1 = __importDefault(__webpack_require__(/*! ./AjaxRequestsHandler */ "./src/rprofiler/AjaxRequestsHandler.ts"));
-var EventsTimingHandler_1 = __importDefault(__webpack_require__(/*! ./EventsTimingHandler */ "./src/rprofiler/EventsTimingHandler.ts"));
-var InputDelayHandler_1 = __importDefault(__webpack_require__(/*! ./InputDelayHandler */ "./src/rprofiler/InputDelayHandler.ts"));
-var ProfilerEventManager_1 = __importDefault(__webpack_require__(/*! ./ProfilerEventManager */ "./src/rprofiler/ProfilerEventManager.ts"));
-var ProfilerJsError_1 = __importDefault(__webpack_require__(/*! ./ProfilerJsError */ "./src/rprofiler/ProfilerJsError.ts"));
-var RProfiler = /** @class */ (function () {
-    function RProfiler() {
-        var _this = this;
-        this.restUrl = 'portalstage.catchpoint.com/jp/1826/v3.3.11/M';
-        this.startTime = new Date().getTime();
-        this.eventsTimingHandler = new EventsTimingHandler_1.default();
-        this.inputDelay = new InputDelayHandler_1.default();
-        this.version = 'v3.3.11'; //version number of inline script
-        this.info = {};
-        this.hasInsight = false;
-        this.data = {
-            start: this.startTime,
-            jsCount: 0,
-            jsErrors: [],
-            loadTime: -1,
-            loadFired: window.document.readyState == 'complete'
-        };
-        this.eventManager = new ProfilerEventManager_1.default();
-        this.setCLS = function (_a) {
-            var metricName = _a.name, metricValue = _a.delta;
-            var CLS = metricName === 'CLS' ? metricValue : undefined;
-            _this.cls = CLS;
-        };
-        this.setLCP = function (_a) {
-            var metricName = _a.name, metricValue = _a.delta;
-            var LCP = metricName === 'LCP' ? metricValue : undefined;
-            _this.lcp = LCP;
-        };
-        // Value being used instead delta as metricValue, Delta provide single value and value is for overall value.
-        this.setINP = function (_a) {
-            var metricName = _a.name, metricValue = _a.value;
-            var INP = metricName === 'INP' ? metricValue : undefined;
-            _this.inp = INP;
-        };
-        this.recordPageLoad = function () {
-            _this.data.loadTime = new Date().getTime();
-            _this.data.loadFired = true;
-        };
-        this.addError = function (msg, url, lineNum) {
-            _this.data.jsCount++;
-            var currError = ProfilerJsError_1.default.createText(msg, url, lineNum);
-            var errorArr = _this.data.jsErrors;
-            for (var _i = 0, errorArr_1 = errorArr; _i < errorArr_1.length; _i++) {
-                var err = errorArr_1[_i];
-                if (err.getText() == currError) {
-                    err.count++;
-                    return;
-                }
-            }
-            errorArr.push(new ProfilerJsError_1.default(msg, url, lineNum));
-        };
-        this.getAjaxRequests = function () {
-            return _this.ajaxHandler.getAjaxRequests();
-        };
-        this.clearAjaxRequests = function () {
-            _this.ajaxHandler.clear();
-        };
-        this.addInfo = function (infoType, key, value) {
-            if (_this.isNullOrEmpty(infoType)) {
-                return;
-            }
-            if (_this.isNullOrEmpty(value)) {
-                _this.info[infoType] = key;
-            }
-            else {
-                if (_this.isNullOrEmpty(key)) {
-                    return;
-                }
-                if (_this.isNullOrEmpty(_this.info[infoType])) {
-                    _this.info[infoType] = {};
-                }
-                _this.info[infoType][key] = value;
-            }
-            _this.hasInsight = true;
-        };
-        this.clearInfo = function () {
-            _this.info = {};
-            _this.hasInsight = false;
-        };
-        this.clearErrors = function () {
-            _this.data.jsCount = 0;
-            _this.data.jsErrors = [];
-        };
-        this.getInfo = function () {
-            if (!_this.hasInsight) {
-                return null;
-            }
-            return _this.info;
-        };
-        this.getEventTimingHandler = function () {
-            return _this.eventsTimingHandler;
-        };
-        this.getInputDelay = function () {
-            return _this.inputDelay;
-        };
-        this.getCPWebVitals = function () {
-            (0, web_vitals_1.onCLS)(_this.setCLS);
-            (0, web_vitals_1.onLCP)(_this.setLCP);
-            (0, web_vitals_1.onINP)(_this.setINP, { reportAllChanges: true });
-            return {
-                cls: _this.cls,
-                lcp: _this.lcp,
-                inp: _this.inp
-            };
-        };
-        this.attachIframe = function () {
-            var protocol = window.location.protocol;
-            var iframe = document.createElement('iframe');
-            iframe.src = 'about:blank';
-            var style = iframe.style;
-            style.position = 'absolute';
-            style.top = '-10000px';
-            style.left = '-1000px';
-            iframe.addEventListener('load', function (event) {
-                var frame = event.currentTarget;
-                if (frame && frame.contentDocument) {
-                    var iframeDocument = frame.contentDocument;
-                    var rumScript = iframeDocument.createElement('script');
-                    rumScript.type = 'text/javascript';
-                    rumScript.src = protocol + '//' + _this.restUrl;
-                    iframeDocument.body.appendChild(rumScript);
-                }
-            });
-            if (document.body) {
-                document.body.insertAdjacentElement('afterbegin', iframe);
-            }
-        };
-        this.eventManager.add(types_1.WindowEvent.Load, window, this.recordPageLoad);
-        var errorFunc = this.addError;
-        this.ajaxHandler = new AjaxRequestsHandler_1.default();
-        (0, web_vitals_1.onCLS)(this.setCLS);
-        (0, web_vitals_1.onLCP)(this.setLCP);
-        (0, web_vitals_1.onINP)(this.setINP, { reportAllChanges: true });
-        function recordJsError(e) {
-            var ev = e.target || e.srcElement;
-            if (ev.nodeType == 3) {
-                ev = ev.parentNode;
-            }
-            errorFunc('N/A', ev.src || ev.URL, -1);
+var Storage_1 = __importDefault(__webpack_require__(/*! ./Storage */ "./src/main/Storage.ts"));
+var VisitorStorage = /** @class */ (function () {
+    function VisitorStorage() {
+        this.userId = -1;
+        this.sessionId = 0;
+        this.sessionTime = 0;
+        this.pageViewCount = 0;
+        this.viewCount = 0;
+        this.pageViewId = 0;
+        this.postFlag = -1;
+        this.sendWaterfall = false;
+        this.exitToEntry = 0;
+    }
+    VisitorStorage.prototype.resetViewCount = function () {
+        this.viewCount = 1;
+    };
+    VisitorStorage.prototype.save = function () {
+        var text = this.getText();
+        Storage_1.default.save(text);
+    };
+    VisitorStorage.prototype.load = function () {
+        var storeValue = Storage_1.default.read();
+        if (!storeValue) {
             return false;
         }
-        if (!!window['opera']) {
-            this.eventManager.add(types_1.WindowEvent.Error, document, recordJsError);
-        }
-        else if ('onerror' in window) {
-            var origOnError = window.onerror;
-            window.onerror = function (msg, url, lineNum) {
-                errorFunc(msg, url !== null && url !== void 0 ? url : '', lineNum !== null && lineNum !== void 0 ? lineNum : 0);
-                if (!!origOnError) {
-                    return origOnError(msg, url, lineNum);
-                }
-                return false;
-            };
-        }
-        // Event to capture the errors in promise rejection
-        if ('onunhandledrejection' in window) {
-            window.onunhandledrejection = function (errorEvent) {
-                var _a, _b, _c;
-                var fullMessage = (_a = errorEvent.reason.stack) !== null && _a !== void 0 ? _a : '';
-                var errorMsg = fullMessage !== '' ? fullMessage.split('at') : [];
-                var fileUrl = errorMsg[1] ? errorMsg[1].replace(/:\d+/g, '') : '';
-                var errorLineNumbers = errorMsg[1] ? errorMsg[1].match(/:\d+/g) : [];
-                var lineNum = errorLineNumbers[0] ? errorLineNumbers[0].replace(':', '') : 0;
-                errorFunc((_c = (_b = errorMsg[0]) === null || _b === void 0 ? void 0 : _b.trim()) !== null && _c !== void 0 ? _c : 'N/A', fileUrl.trim(), lineNum);
-            };
-        }
-        if (!!window['__cpCdnPath']) {
-            this.restUrl = window['__cpCdnPath'].trim();
-        }
-    }
-    RProfiler.prototype.isNullOrEmpty = function (val) {
-        if (val === undefined || val === null) {
-            return true;
-        }
-        if (typeof val == 'string') {
-            var str = val;
-            return str.trim().length == 0;
-        }
-        return false;
-    };
-    RProfiler.prototype.dispatchCustomEvent = function (event) {
-        (function (w) {
-            if (typeof w.CustomEvent === 'function') {
-                return false;
+        var split = storeValue.split(',');
+        for (var _i = 0, split_1 = split; _i < split_1.length; _i++) {
+            var visitorVal = split_1[_i];
+            var array = visitorVal.split(':');
+            if (array.length !== 2) {
+                continue;
             }
-            function CustomEvent(event, params) {
-                params = params || { bubbles: false, cancelable: false, detail: undefined };
-                var evt = document.createEvent('CustomEvent');
-                evt.initCustomEvent(event, params.bubbles, params.cancelable, params.detail);
-                return evt;
+            var key = array[0];
+            if (typeof key === 'string') {
+                key = key.trim();
             }
-            CustomEvent.prototype = Event.prototype;
-            // @ts-ignore
-            w.CustomEvent = CustomEvent;
-        })(window); //for the browsers don't support CustomEvent
-        var e = new CustomEvent(event);
-        window.dispatchEvent(e);
+            var value = array[1];
+            if (key === types_1.CookieIdentifier.UrlCheckSum) {
+                this.urlCheckSum = value;
+                continue;
+            }
+            var num = parseInt(array[1], 10);
+            if (isNaN(num)) {
+                continue;
+            }
+            switch (key) {
+                case types_1.CookieIdentifier.UserId:
+                    this.userId = num;
+                    break;
+                case types_1.CookieIdentifier.SessionId:
+                    this.sessionId = num;
+                    break;
+                case types_1.CookieIdentifier.SessionTime:
+                    this.sessionTime = num;
+                    break;
+                case types_1.CookieIdentifier.PageViewCount:
+                    this.pageViewCount = num;
+                    break;
+                case types_1.CookieIdentifier.PostFlag:
+                    this.postFlag = num;
+                    break;
+            }
+        }
+        return true;
     };
-    return RProfiler;
+    VisitorStorage.prototype.getText = function () {
+        var text = types_1.CookieIdentifier.UserId + ':' + this.userId + ',';
+        text += types_1.CookieIdentifier.SessionId + ':' + this.sessionId + ',';
+        text += types_1.CookieIdentifier.SessionTime + ':' + this.sessionTime + ',';
+        text += types_1.CookieIdentifier.PageViewCount + ':' + this.pageViewCount + ',';
+        text += types_1.CookieIdentifier.UrlCheckSum + ':' + this.urlCheckSum + ',';
+        text += types_1.CookieIdentifier.PostFlag + ':' + this.postFlag;
+        return text;
+    };
+    return VisitorStorage;
 }());
-exports["default"] = RProfiler;
-var profiler = new RProfiler();
-window['RProfiler'] = profiler;
-window['WindowEvent'] = types_1.WindowEvent;
-// if the document state is already complete by the time script is injected - can happen in the case of tag managers like GTM
-if (document.readyState === 'complete') {
-    profiler.attachIframe();
-}
-else {
-    document.onreadystatechange = function () {
-        if (document.readyState === 'complete') {
-            profiler.attachIframe();
-        }
+exports["default"] = VisitorStorage;
+
+
+/***/ }),
+
+/***/ "./src/main/WaterfallItem.ts":
+/*!***********************************!*\
+  !*** ./src/main/WaterfallItem.ts ***!
+  \***********************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+var types_1 = __webpack_require__(/*! ../types */ "./src/types.ts");
+var Util_1 = __importDefault(__webpack_require__(/*! ./Util */ "./src/main/Util.ts"));
+var WaterfallItem = /** @class */ (function () {
+    function WaterfallItem(resource) {
+        this.dns = null;
+        this.connect = null;
+        this.load = null;
+        this.wait = null;
+        this.start = 0;
+        this.duration = 0;
+        this.redirect = 0;
+        this.ssl = null;
+        this.url = resource.name;
+        var func = Util_1.default.getValue;
+        this.dns = func(resource, types_1.Metrics.DNS);
+        this.connect = func(resource, types_1.Metrics.Connect);
+        this.wait = func(resource, types_1.Metrics.Wait);
+        this.load = func(resource, types_1.Metrics.Load);
+        this.start = func(resource, types_1.Metrics.Start);
+        this.duration = func(resource, types_1.Metrics.Duration);
+        this.redirect = func(resource, types_1.Metrics.Redirect);
+        this.ssl = func(resource, types_1.Metrics.SSL);
+    }
+    Object.defineProperty(WaterfallItem.prototype, "url", {
+        get: function () {
+            return this._url;
+        },
+        set: function (u) {
+            if (u.indexOf('http://') !== -1) {
+                this.protocol = 0;
+            }
+            else if (u.indexOf('https://') !== -1) {
+                this.protocol = 1;
+            }
+            var host = u.split('/').slice(1, 3).join('');
+            var index = host.indexOf(':');
+            if (index != -1) {
+                var p = host.substr(index + 1);
+                var num = parseInt(p);
+                if (!isNaN(num)) {
+                    this.port = num;
+                }
+            }
+            u = u.substr(u.indexOf(host) + host.length);
+            index = u.indexOf('?');
+            if (index != -1) {
+                u = u.substr(0, index);
+            }
+            index = u.indexOf('#');
+            if (index != -1) {
+                u = u.substr(0, index);
+            }
+            u = u.substr(0, 64);
+            this._url = u;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    WaterfallItem.prototype.translateForPost = function () {
+        // @ts-ignore
+        var round = Math.round;
+        var roundedValue = Util_1.default.getRoundedValue;
+        var obj = {
+            u: this.url,
+            pr: this.protocol
+        };
+        var setIfNumber = function (key, num) {
+            if (typeof num == 'number' && !isNaN(num)) {
+                obj[key] = num;
+            }
+        };
+        setIfNumber('pt', this.port);
+        setIfNumber('dn', roundedValue(this.dns));
+        setIfNumber('fc', roundedValue(this.connect));
+        setIfNumber('ld', roundedValue(this.load));
+        setIfNumber('wt', roundedValue(this.wait));
+        setIfNumber('st', roundedValue(this.start));
+        setIfNumber('rd', roundedValue(this.redirect));
+        setIfNumber('dr', roundedValue(this.duration));
+        setIfNumber('ssl', roundedValue(this.ssl));
+        return obj;
     };
-}
-profiler.dispatchCustomEvent('GlimpseLoaded');
+    return WaterfallItem;
+}());
+exports["default"] = WaterfallItem;
+
+
+/***/ }),
+
+/***/ "./src/main/main.ts":
+/*!**************************!*\
+  !*** ./src/main/main.ts ***!
+  \**************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+var DataProvider_1 = __importDefault(__webpack_require__(/*! ./DataProvider */ "./src/main/DataProvider.ts"));
+var main = (function () {
+    if (!document.getElementById || !(window['attachEvent'] || window.addEventListener)) {
+        return;
+    }
+    var pageWindow = parent.window;
+    var location = pageWindow.location;
+    var profiler = pageWindow['RProfiler'];
+    var windowEvent = pageWindow['WindowEvent'];
+    var protocol = location.protocol + '//';
+    if (!windowEvent || !profiler) {
+        return;
+    }
+    var hasPerformanceApi = !!pageWindow.performance && typeof pageWindow.performance === 'object';
+    var hasGetEntriesApi = hasPerformanceApi && typeof pageWindow.performance.getEntriesByType === 'function';
+    // extend WindowEvent enum definition
+    var windowEventDef = {
+        Load: windowEvent.Load,
+        BeforeUnload: windowEvent.BeforeUnload,
+        Unload: windowEvent.Unload,
+        Abort: windowEvent.Abort,
+        Error: windowEvent.Error
+    };
+    // variable values replaced in code behind
+    var testUserId = "test";
+    var version = 'v3.3.11';
+    var config = {
+        sampleRate: 100, // range [0 - 100]
+        waterfallSampleRate: 100, // range [0 - 100]
+        postUrl: protocol + 'lst01a.3genlabs.net/hawklogserver/r.p',
+        siteId: 1826,
+        debugParameter: 'GlimpseDebug',
+        debugUrl: 'localhost:44394/jp/v3.3.11/s.D',
+        waterfallParameter: 'GlimpseWaterfall',
+        sendOnLoad: false, // default is send onunload
+        clearResources: true, // clear performance entries when we send data to core. using performance.clearResourceTimings()
+        ajaxDomains: ''
+    };
+    var now = function () {
+        return new Date().getTime();
+    };
+    if (!!pageWindow['__cpPostUrl']) {
+        config.postUrl = pageWindow['__cpPostUrl'].trim();
+    }
+    if (!!pageWindow['__cpSendOnLoad']) {
+        config.sendOnLoad = pageWindow['__cpSendOnLoad'] === true;
+    }
+    // @ts-ignore
+    var provider = new DataProvider_1.default();
+    return {
+        pageWindow: pageWindow,
+        profiler: profiler,
+        hasGetEntriesApi: hasGetEntriesApi,
+        protocol: protocol,
+        config: config,
+        testUserId: testUserId,
+        version: version,
+        hasPerformanceApi: hasPerformanceApi,
+        now: now,
+        windowEventDef: windowEventDef
+    };
+})();
+exports["default"] = main;
 
 
 /***/ }),
@@ -891,7 +2004,6 @@ profiler.dispatchCustomEvent('GlimpseLoaded');
   \**********************/
 /***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.WinHttpMethod = exports.CookieIdentifier = exports.Metrics = exports.PostType = exports.VisibilityType = exports.WindowEvent = void 0;
@@ -950,17 +2062,6 @@ var WinHttpMethod;
 })(WinHttpMethod || (exports.WinHttpMethod = WinHttpMethod = {}));
 
 
-/***/ }),
-
-/***/ "./node_modules/web-vitals/dist/web-vitals.umd.cjs":
-/*!*********************************************************!*\
-  !*** ./node_modules/web-vitals/dist/web-vitals.umd.cjs ***!
-  \*********************************************************/
-/***/ (function(__unused_webpack_module, exports) {
-
-!function(e,n){ true?n(exports):0}(this,(function(e){"use strict";var n,t,i,r,o,a=-1,c=function(e){addEventListener("pageshow",(function(n){n.persisted&&(a=n.timeStamp,e(n))}),!0)},u=function(){return window.performance&&performance.getEntriesByType&&performance.getEntriesByType("navigation")[0]},f=function(){var e=u();return e&&e.activationStart||0},s=function(e,n){var t=u(),i="navigate";a>=0?i="back-forward-cache":t&&(document.prerendering||f()>0?i="prerender":document.wasDiscarded?i="restore":t.type&&(i=t.type.replace(/_/g,"-")));return{name:e,value:void 0===n?-1:n,rating:"good",delta:0,entries:[],id:"v3-".concat(Date.now(),"-").concat(Math.floor(8999999999999*Math.random())+1e12),navigationType:i}},d=function(e,n,t){try{if(PerformanceObserver.supportedEntryTypes.includes(e)){var i=new PerformanceObserver((function(e){Promise.resolve().then((function(){n(e.getEntries())}))}));return i.observe(Object.assign({type:e,buffered:!0},t||{})),i}}catch(e){}},l=function(e,n,t,i){var r,o;return function(a){n.value>=0&&(a||i)&&((o=n.value-(r||0))||void 0===r)&&(r=n.value,n.delta=o,n.rating=function(e,n){return e>n[1]?"poor":e>n[0]?"needs-improvement":"good"}(n.value,t),e(n))}},p=function(e){requestAnimationFrame((function(){return requestAnimationFrame((function(){return e()}))}))},v=function(e){var n=function(n){"pagehide"!==n.type&&"hidden"!==document.visibilityState||e(n)};addEventListener("visibilitychange",n,!0),addEventListener("pagehide",n,!0)},m=function(e){var n=!1;return function(t){n||(e(t),n=!0)}},h=-1,g=function(){return"hidden"!==document.visibilityState||document.prerendering?1/0:0},T=function(e){"hidden"===document.visibilityState&&h>-1&&(h="visibilitychange"===e.type?e.timeStamp:0,E())},y=function(){addEventListener("visibilitychange",T,!0),addEventListener("prerenderingchange",T,!0)},E=function(){removeEventListener("visibilitychange",T,!0),removeEventListener("prerenderingchange",T,!0)},C=function(){return h<0&&(h=g(),y(),c((function(){setTimeout((function(){h=g(),y()}),0)}))),{get firstHiddenTime(){return h}}},L=function(e){document.prerendering?addEventListener("prerenderingchange",(function(){return e()}),!0):e()},b=[1800,3e3],w=function(e,n){n=n||{},L((function(){var t,i=C(),r=s("FCP"),o=d("paint",(function(e){e.forEach((function(e){"first-contentful-paint"===e.name&&(o.disconnect(),e.startTime<i.firstHiddenTime&&(r.value=Math.max(e.startTime-f(),0),r.entries.push(e),t(!0)))}))}));o&&(t=l(e,r,b,n.reportAllChanges),c((function(i){r=s("FCP"),t=l(e,r,b,n.reportAllChanges),p((function(){r.value=performance.now()-i.timeStamp,t(!0)}))})))}))},S=[.1,.25],P=function(e,n){n=n||{},w(m((function(){var t,i=s("CLS",0),r=0,o=[],a=function(e){e.forEach((function(e){if(!e.hadRecentInput){var n=o[0],t=o[o.length-1];r&&e.startTime-t.startTime<1e3&&e.startTime-n.startTime<5e3?(r+=e.value,o.push(e)):(r=e.value,o=[e])}})),r>i.value&&(i.value=r,i.entries=o,t())},u=d("layout-shift",a);u&&(t=l(e,i,S,n.reportAllChanges),v((function(){a(u.takeRecords()),t(!0)})),c((function(){r=0,i=s("CLS",0),t=l(e,i,S,n.reportAllChanges),p((function(){return t()}))})),setTimeout(t,0))})))},I={passive:!0,capture:!0},F=new Date,A=function(e,r){n||(n=r,t=e,i=new Date,k(removeEventListener),D())},D=function(){if(t>=0&&t<i-F){var e={entryType:"first-input",name:n.type,target:n.target,cancelable:n.cancelable,startTime:n.timeStamp,processingStart:n.timeStamp+t};r.forEach((function(n){n(e)})),r=[]}},M=function(e){if(e.cancelable){var n=(e.timeStamp>1e12?new Date:performance.now())-e.timeStamp;"pointerdown"==e.type?function(e,n){var t=function(){A(e,n),r()},i=function(){r()},r=function(){removeEventListener("pointerup",t,I),removeEventListener("pointercancel",i,I)};addEventListener("pointerup",t,I),addEventListener("pointercancel",i,I)}(n,e):A(n,e)}},k=function(e){["mousedown","keydown","touchstart","pointerdown"].forEach((function(n){return e(n,M,I)}))},x=[100,300],B=function(e,i){i=i||{},L((function(){var o,a=C(),u=s("FID"),f=function(e){e.startTime<a.firstHiddenTime&&(u.value=e.processingStart-e.startTime,u.entries.push(e),o(!0))},p=function(e){e.forEach(f)},h=d("first-input",p);o=l(e,u,x,i.reportAllChanges),h&&v(m((function(){p(h.takeRecords()),h.disconnect()}))),h&&c((function(){var a;u=s("FID"),o=l(e,u,x,i.reportAllChanges),r=[],t=-1,n=null,k(addEventListener),a=f,r.push(a),D()}))}))},N=0,R=1/0,H=0,O=function(e){e.forEach((function(e){e.interactionId&&(R=Math.min(R,e.interactionId),H=Math.max(H,e.interactionId),N=H?(H-R)/7+1:0)}))},j=function(){return o?N:performance.interactionCount||0},q=function(){"interactionCount"in performance||o||(o=d("event",O,{type:"event",buffered:!0,durationThreshold:0}))},V=[200,500],_=0,z=function(){return j()-_},G=[],J={},K=function(e){var n=G[G.length-1],t=J[e.interactionId];if(t||G.length<10||e.duration>n.latency){if(t)t.entries.push(e),t.latency=Math.max(t.latency,e.duration);else{var i={id:e.interactionId,latency:e.duration,entries:[e]};J[i.id]=i,G.push(i)}G.sort((function(e,n){return n.latency-e.latency})),G.splice(10).forEach((function(e){delete J[e.id]}))}},Q=function(e,n){n=n||{},L((function(){var t;q();var i,r=s("INP"),o=function(e){e.forEach((function(e){(e.interactionId&&K(e),"first-input"===e.entryType)&&(!G.some((function(n){return n.entries.some((function(n){return e.duration===n.duration&&e.startTime===n.startTime}))}))&&K(e))}));var n,t=(n=Math.min(G.length-1,Math.floor(z()/50)),G[n]);t&&t.latency!==r.value&&(r.value=t.latency,r.entries=t.entries,i())},a=d("event",o,{durationThreshold:null!==(t=n.durationThreshold)&&void 0!==t?t:40});i=l(e,r,V,n.reportAllChanges),a&&("PerformanceEventTiming"in window&&"interactionId"in PerformanceEventTiming.prototype&&a.observe({type:"first-input",buffered:!0}),v((function(){o(a.takeRecords()),r.value<0&&z()>0&&(r.value=0,r.entries=[]),i(!0)})),c((function(){G=[],_=j(),r=s("INP"),i=l(e,r,V,n.reportAllChanges)})))}))},U=[2500,4e3],W={},X=function(e,n){n=n||{},L((function(){var t,i=C(),r=s("LCP"),o=function(e){var n=e[e.length-1];n&&n.startTime<i.firstHiddenTime&&(r.value=Math.max(n.startTime-f(),0),r.entries=[n],t())},a=d("largest-contentful-paint",o);if(a){t=l(e,r,U,n.reportAllChanges);var u=m((function(){W[r.id]||(o(a.takeRecords()),a.disconnect(),W[r.id]=!0,t(!0))}));["keydown","click"].forEach((function(e){addEventListener(e,(function(){return setTimeout(u,0)}),!0)})),v(u),c((function(i){r=s("LCP"),t=l(e,r,U,n.reportAllChanges),p((function(){r.value=performance.now()-i.timeStamp,W[r.id]=!0,t(!0)}))}))}}))},Y=[800,1800],Z=function e(n){document.prerendering?L((function(){return e(n)})):"complete"!==document.readyState?addEventListener("load",(function(){return e(n)}),!0):setTimeout(n,0)},$=function(e,n){n=n||{};var t=s("TTFB"),i=l(e,t,Y,n.reportAllChanges);Z((function(){var r=u();if(r){var o=r.responseStart;if(o<=0||o>performance.now())return;t.value=Math.max(o-f(),0),t.entries=[r],i(!0),c((function(){t=s("TTFB",0),(i=l(e,t,Y,n.reportAllChanges))(!0)}))}}))};e.CLSThresholds=S,e.FCPThresholds=b,e.FIDThresholds=x,e.INPThresholds=V,e.LCPThresholds=U,e.TTFBThresholds=Y,e.getCLS=P,e.getFCP=w,e.getFID=B,e.getINP=Q,e.getLCP=X,e.getTTFB=$,e.onCLS=P,e.onFCP=w,e.onFID=B,e.onINP=Q,e.onLCP=X,e.onTTFB=$}));
-
-
 /***/ })
 
 /******/ 	});
@@ -994,7 +2095,450 @@ var WinHttpMethod;
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module is referenced by other modules so it can't be inlined
-/******/ 	var __webpack_exports__ = __webpack_require__("./src/rprofiler/rprofiler.ts");
+/******/ 	var __webpack_exports__ = __webpack_require__("./src/main/main.ts");
 /******/ 	
+/******/ })()
+;
+/******/ (() => { // webpackBootstrap
+/******/ 	"use strict";
+/******/ 	var __webpack_modules__ = ({
+
+/***/ "./src/utils.ts":
+/*!**********************!*\
+  !*** ./src/utils.ts ***!
+  \**********************/
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.extractImageUrl = void 0;
+var extractImageUrl = function (backgroundImage) {
+    if (backgroundImage && backgroundImage.startsWith('url')) {
+        var match = backgroundImage.match(/url\(["']?([^"']*)["']?\)/);
+        var url = match && match.length > 1 && match[1];
+        if (url && !url.startsWith('data')) {
+            return url;
+        }
+    }
+    return null;
+};
+exports.extractImageUrl = extractImageUrl;
+
+
+/***/ })
+
+/******/ 	});
+/************************************************************************/
+/******/ 	// The module cache
+/******/ 	var __webpack_module_cache__ = {};
+/******/ 	
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/ 		// Check if module is in cache
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = __webpack_module_cache__[moduleId] = {
+/******/ 			// no module.id needed
+/******/ 			// no module.loaded needed
+/******/ 			exports: {}
+/******/ 		};
+/******/ 	
+/******/ 		// Execute the module function
+/******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
+/******/ 	
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/ 	
+/************************************************************************/
+var __webpack_exports__ = {};
+// This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
+(() => {
+var exports = __webpack_exports__;
+/*!****************************!*\
+  !*** ./src/visComplete.ts ***!
+  \****************************/
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+var utils_1 = __webpack_require__(/*! ./utils */ "./src/utils.ts");
+/**
+ * Visually completed is calculated using Mutation observer, when elements added to the page we are tracking the time stamp.
+ * After page load VisComplete listen to mutations for 5sec and will disconnect mutation observer.
+ * If the difference between previous mutation and the current mutation is greater than 1000ms mutation observer will be disconnected.
+ * VisComplete also listen to all the resources being loaded on the page (till 2s after page load) and take the end time of the last resource.
+ * Max value of the Mutation and the last resource to get the response will be considered as Visually complete
+ * VisComplete listen to scroll and click events to avoid miscalculation of VCT and will stop calculating if one of the events fired.
+ * */
+var windowItem = parent.window || window;
+windowItem['CPVisuallyComplete'] = (function () {
+    var VisComplete = /** @class */ (function () {
+        function VisComplete() {
+            var _this = this;
+            this.targetWindow = windowItem;
+            this.mutationObserver = undefined;
+            this.start = 0;
+            this.waitMs = 2000; //The time to wait after onload, before we start running our vis complete logic
+            this.maxResourceTiming = 0;
+            this.mutationObserverVal = 0;
+            this.scroll = 'scroll';
+            this.click = 'click';
+            this.maxDiffBetweenMutation = 1000;
+            this.sinceLastXHR = 500;
+            this.disconnectObserverTimeout = 5000;
+            // @ts-ignore
+            this.hasPerformance = typeof this.targetWindow.performance === 'object' &&
+                typeof this.targetWindow.performance.getEntriesByType === 'function';
+            this.removeListeners = function () {
+                document.removeEventListener(_this.scroll, _this.clear);
+                document.removeEventListener(_this.click, _this.clear);
+            };
+            this.addListeners = function () {
+                document.addEventListener(_this.scroll, _this.clear);
+                document.addEventListener(_this.click, _this.clear);
+            };
+            this.imageListener = function (event) {
+                var requests = _this.targetWindow.performance.getEntriesByType('resource');
+                var request = undefined;
+                for (var i = 0; i < requests.length; i++) {
+                    if (requests[i].name === event.target.currentSrc) {
+                        request = requests[i];
+                        break;
+                    }
+                }
+                if (request) {
+                    _this.maxResourceTiming = Math.max(_this.maxResourceTiming, Math.round(request.responseEnd));
+                }
+                event.currentTarget.removeEventListener('load', _this.imageListener);
+            };
+            this.videoListener = function (event) {
+                _this.maxResourceTiming = Math.max(_this.maxResourceTiming, Math.round(_this.getPerformanceTime()));
+                event.currentTarget.removeEventListener('canplay', _this.videoListener);
+            };
+            this.addListenersForDynamicContent = function (element) {
+                var images = element.querySelectorAll('img');
+                for (var i = 0; i < images.length; i += 1) {
+                    var image = images[i];
+                    if (_this.isVisible(image)) {
+                        image.addEventListener('load', _this.imageListener);
+                    }
+                }
+                var videos = element.querySelectorAll('video');
+                for (var i = 0; i < videos.length; i += 1) {
+                    var video = videos[i];
+                    if (_this.isVisible(video)) {
+                        video.addEventListener('canplay', _this.videoListener);
+                    }
+                }
+            };
+            this.clear = function () {
+                clearTimeout(_this.timeout);
+                _this.removeListeners();
+                _this.trigger();
+            };
+            this.onLoad = function () {
+                _this.timeout = window.setTimeout(function () {
+                    _this.removeListeners();
+                    _this.calculate();
+                }, _this.waitMs);
+            };
+            this.getBackgroundImagesTiming = function () {
+                var imagesToCheck = [];
+                for (var i = 0; i < document.styleSheets.length; i += 1) {
+                    var styleSheet = document.styleSheets[i];
+                    try {
+                        for (var j = 0; j < styleSheet.cssRules.length; j += 1) {
+                            var cssRule = styleSheet.cssRules[j];
+                            var selector = cssRule.selectorText;
+                            var style = cssRule.style;
+                            if (style) {
+                                for (var k = 0; k < style.length; k += 1) {
+                                    var propertyName = style[k];
+                                    if (propertyName === 'background-image') {
+                                        var propertyValue = style[propertyName];
+                                        var url = (0, utils_1.extractImageUrl)(propertyValue);
+                                        if (url) {
+                                            var element = _this.targetWindow.document.querySelector(selector);
+                                            if (_this.isVisible(element)) {
+                                                imagesToCheck.push(url);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch (e) { }
+                }
+                var elements = _this.targetWindow.document.querySelectorAll('[style*="background"]');
+                for (var i = 0; i < elements.length; i++) {
+                    if (_this.isVisible(elements[i])) {
+                        var styles = _this.targetWindow.getComputedStyle(elements[i]);
+                        var backgroundImage = styles.getPropertyValue('background-image');
+                        var url = (0, utils_1.extractImageUrl)(backgroundImage);
+                        if (url) {
+                            imagesToCheck.push(url);
+                        }
+                    }
+                }
+                for (var _i = 0, imagesToCheck_1 = imagesToCheck; _i < imagesToCheck_1.length; _i++) {
+                    var url = imagesToCheck_1[_i];
+                    var requests = _this.targetWindow.performance.getEntriesByType('resource');
+                    var request = undefined;
+                    for (var i = 0; i < requests.length; i++) {
+                        if (requests[i].name === new URL(url, _this.targetWindow.location.href).href) {
+                            request = requests[i];
+                            break;
+                        }
+                    }
+                    if (request) {
+                        _this.maxResourceTiming = Math.max(_this.maxResourceTiming, Math.round(request.responseEnd));
+                    }
+                }
+            };
+            this.calculate = function () {
+                if (!_this.targetWindow.performance) {
+                    _this.trigger();
+                    return;
+                }
+                _this.getBackgroundImagesTiming();
+                _this.trigger();
+            };
+            this.getPerformanceTime = function () {
+                return _this.targetWindow['performance'].now();
+            };
+            this.resetValueOnSoftNav = function () {
+                _this.mutationObserverVal = 0;
+                _this.maxResourceTiming = 0;
+                _this.isSoftNav = false;
+            };
+            this.isVisible = function (node) {
+                var rect = typeof node.getBoundingClientRect === 'function' && node.getBoundingClientRect();
+                // if the added element is Visible in the view port
+                var isNodeInViewport = rect &&
+                    rect.width * rect.height >= 8 &&
+                    rect.right >= 0 &&
+                    rect.bottom >= 0 &&
+                    rect.left <= _this.targetWindow.innerWidth &&
+                    rect.top <= _this.targetWindow.innerHeight &&
+                    !node.hidden &&
+                    node.type !== 'hidden';
+                if (isNodeInViewport) {
+                    var style = window.getComputedStyle(node);
+                    return (style.display !== 'none' &&
+                        style.visibility !== 'hidden' &&
+                        style.visibility !== 'collapse' &&
+                        +style.opacity > 0);
+                }
+                return false;
+            };
+            this.mutationCallback = function (mutationsList) {
+                mutationsList.forEach(function (mutation) {
+                    if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                        var addedNode = mutation.addedNodes[0];
+                        if (_this.isVisible(addedNode)) {
+                            if (addedNode.nodeName.toLowerCase() === 'img') {
+                                addedNode.addEventListener('load', _this.imageListener);
+                            }
+                            if (addedNode.nodeName.toLowerCase() === 'video') {
+                                addedNode.addEventListener('canplay', _this.videoListener);
+                            }
+                            var perfTime = _this.getPerformanceTime();
+                            if (_this.isSoftNav) {
+                                _this.resetValueOnSoftNav();
+                            }
+                            var requests = _this.targetWindow.performance.getEntriesByType('resource');
+                            var lastXHR = undefined;
+                            for (var i = 0; i < requests.length; i++) {
+                                if (requests[i].initiatorType === 'xmlhttprequest') {
+                                    lastXHR = requests[i];
+                                    break;
+                                }
+                            }
+                            if (_this.mutationObserverVal === 0 ||
+                                (lastXHR && perfTime - lastXHR.responseEnd < _this.sinceLastXHR) ||
+                                perfTime - _this.mutationObserverVal <= _this.maxDiffBetweenMutation) {
+                                _this.mutationObserverVal = Math.round(perfTime);
+                            }
+                        }
+                    }
+                    else if (mutation.type === 'attributes') {
+                        if (mutation.target.nodeName.toLowerCase() === 'img' && mutation.attributeName === 'src') {
+                            if (_this.isVisible(mutation.target)) {
+                                mutation.target.addEventListener('load', _this.imageListener);
+                            }
+                        }
+                    }
+                });
+            };
+            this.initMutationObserver = function () {
+                var browserMutationObserver = _this.targetWindow['MutationObserver'] ||
+                    _this.targetWindow['WebKitMutationObserver'] ||
+                    _this.targetWindow['MozMutationObserver'];
+                if (browserMutationObserver && _this.targetWindow['performance']) {
+                    _this.mutationObserver = new browserMutationObserver(_this.mutationCallback);
+                    _this.observe();
+                }
+            };
+            this.trigger = function () {
+                if (_this.callback) {
+                    var visCompTime = _this.getValue(false);
+                    _this.callback(visCompTime);
+                }
+            };
+            this.observe = function () {
+                _this.mutationObserver.observe(_this.targetWindow.document, {
+                    childList: true,
+                    attributes: true,
+                    characterData: true,
+                    subtree: true
+                });
+                setTimeout(function () {
+                    _this.mutationObserver.disconnect();
+                }, _this.disconnectObserverTimeout);
+            };
+            this.getValue = function (isSoftNavigation) {
+                //If isSoftNavigation is not set, look for isSoftNav value captured by CPVisuallyComplete
+                var isSoftNav = isSoftNavigation || _this.isSoftNav;
+                if (_this.maxResourceTiming || _this.mutationObserverVal) {
+                    var visCompTime = 0;
+                    if (_this.maxResourceTiming && _this.mutationObserverVal) {
+                        visCompTime = Math.max(_this.maxResourceTiming, _this.mutationObserverVal);
+                    }
+                    else if (_this.maxResourceTiming) {
+                        visCompTime = _this.maxResourceTiming;
+                    }
+                    else if (_this.mutationObserverVal) {
+                        visCompTime = _this.mutationObserverVal;
+                    }
+                    if (!isSoftNav) {
+                        return Math.round(Math.max(visCompTime - _this.start, _this.getFirstPaintTime()));
+                    }
+                    return Math.round(visCompTime - _this.start);
+                }
+                return undefined;
+            };
+            this.onComplete = function (callback) {
+                _this.callback = callback;
+            };
+            this.reset = function () {
+                _this.isSoftNav = true;
+                if (_this.targetWindow['performance']) {
+                    _this.start = _this.getPerformanceTime();
+                    _this.mutationObserver.disconnect();
+                    _this.observe();
+                    _this.onLoad();
+                }
+            };
+            this.captureSoftNavigations = function () {
+                if (!_this.targetWindow['HashChangeEvent'] || _this.targetWindow['RProfiler']) {
+                    return;
+                }
+                _this.addEvent('hashchange', _this.targetWindow, _this.reset);
+                var history = _this.targetWindow.history;
+                if (!history) {
+                    return;
+                }
+                var functionStr = 'function';
+                if (typeof history.go === functionStr) {
+                    var origGo_1 = history.go;
+                    history.go = function (delta) {
+                        _this.reset();
+                        origGo_1.call(history, delta);
+                    };
+                }
+                if (typeof history.back === functionStr) {
+                    var origBack_1 = history.back;
+                    history.back = function () {
+                        _this.reset();
+                        origBack_1.call(history);
+                    };
+                }
+                if (typeof history.forward === functionStr) {
+                    var origForward_1 = history.forward;
+                    history.forward = function () {
+                        _this.reset();
+                        origForward_1.call(history);
+                    };
+                }
+                if (typeof history.pushState === functionStr) {
+                    var origPush_1 = history.pushState;
+                    history.pushState = function (data, title, url) {
+                        _this.reset();
+                        origPush_1.call(history, data, title, url);
+                    };
+                }
+                if (typeof history.replaceState === functionStr) {
+                    var origReplace_1 = history.replaceState;
+                    history.replaceState = function (data, title, url) {
+                        _this.reset();
+                        origReplace_1.call(history, data, title, url);
+                    };
+                }
+            };
+            this.initMutationObserver();
+            this.captureSoftNavigations();
+            this.init();
+        }
+        VisComplete.prototype.init = function () {
+            var _this = this;
+            var document = this.targetWindow.document;
+            if (document.readyState === 'complete') {
+                this.onLoad();
+            }
+            else {
+                this.targetWindow.addEventListener('load', this.onLoad);
+            }
+            if (document.readyState === 'interactive') {
+                this.addListenersForDynamicContent(document);
+            }
+            else {
+                this.targetWindow.addEventListener('DOMContentLoaded', function () {
+                    _this.addListenersForDynamicContent(document);
+                });
+            }
+            this.removeListeners();
+            this.addListeners();
+        };
+        VisComplete.prototype.addEvent = function (type, target, func) {
+            if (this.targetWindow['attachEvent']) {
+                target.attachEvent('on' + type, func);
+            }
+            else {
+                target.addEventListener(type, func, false);
+            }
+        };
+        VisComplete.prototype.getFirstPaintTime = function () {
+            var paintTime = 0;
+            try {
+                var paintTimings = this.targetWindow.performance.getEntriesByType('paint');
+                if (paintTimings && paintTimings.length > 0) {
+                    var firstPaint = paintTimings.filter(function (x) { return x.name === 'first-paint'; });
+                    if (firstPaint && firstPaint.length > 0 && firstPaint[0].startTime) {
+                        paintTime = Math.round(firstPaint[0].startTime);
+                    }
+                    var firstContentfulPaint = paintTimings.filter(function (x) { return x.name === 'first-contentful-paint'; });
+                    if (firstContentfulPaint && firstContentfulPaint.length > 0 && firstContentfulPaint[0].startTime) {
+                        paintTime = Math.round(firstContentfulPaint[0].startTime);
+                    }
+                }
+            }
+            catch (_a) { }
+            return paintTime;
+        };
+        return VisComplete;
+    }());
+    var visComplete = new VisComplete();
+    return {
+        getValue: visComplete.getValue,
+        onComplete: visComplete.onComplete,
+        reset: visComplete.reset
+    };
+})();
+
+})();
+
 /******/ })()
 ;
