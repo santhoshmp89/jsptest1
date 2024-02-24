@@ -798,7 +798,7 @@ var RProfiler = /** @class */ (function () {
         var errorFunc = this.addError;
         this.ajaxHandler = new AjaxRequestsHandler_1.default();
         (0, web_vitals_1.onCLS)(this.setCLS);
-        (0, web_vitals_1.onLCP)(this.setLCP);
+        (0, web_vitals_1.onLCP)(this.setLCP, { reportAllChanges: true });
         (0, web_vitals_1.onINP)(this.setINP, { reportAllChanges: true });
         function recordJsError(e) {
             var ev = e.target || e.srcElement;
