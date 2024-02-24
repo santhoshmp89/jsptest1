@@ -20,7 +20,9 @@ var AjaxRequestsHandler = /** @class */ (function () {
         this.fetchRequests = [];
         this.fetchEntriesIndices = {};
         this.compareEntriesDelay = 100;
-        this.hasPerformance = typeof window.performance === "object" && typeof window.performance.now === "function" && typeof window.performance.getEntriesByType === "function";
+        this.hasPerformance = typeof window.performance === 'object' &&
+            typeof window.performance.now === 'function' &&
+            typeof window.performance.getEntriesByType === 'function';
         this.captureFetchRequests = function () {
             var tempArray = [];
             var ajaxHandler = _this;
@@ -67,7 +69,7 @@ var AjaxRequestsHandler = /** @class */ (function () {
                         fetchRequestIndex = tempArray.length;
                         var fetchUrl = '';
                         //The first argument can be either a url or Request object
-                        if (typeof (firstArg) === 'object' && !!firstArg) {
+                        if (typeof firstArg === 'object' && !!firstArg) {
                             if (Array.isArray(firstArg) && firstArg.length > 0) {
                                 fetchUrl = firstArg[0];
                             }
@@ -108,7 +110,7 @@ var AjaxRequestsHandler = /** @class */ (function () {
         if (this.hasPerformance) {
             return window.performance.now();
         }
-        return (new Date()).getTime();
+        return new Date().getTime();
     };
     AjaxRequestsHandler.prototype.processPerformanceEntries = function (fetchRequest, requestArray) {
         var ajaxHandler = this;
@@ -118,7 +120,7 @@ var AjaxRequestsHandler = /** @class */ (function () {
             }
             var url = fetchRequest.url;
             var matches = [];
-            var entries = performance.getEntriesByType("resource");
+            var entries = performance.getEntriesByType('resource');
             for (var _i = 0, entries_1 = entries; _i < entries_1.length; _i++) {
                 var entry = entries_1[_i];
                 if (entry.name === url) {
@@ -154,14 +156,14 @@ var AjaxRequestsHandler = /** @class */ (function () {
         var open = xhr.open;
         var send = xhr.send;
         var tempArray = [];
-        if (ajaxHandler.hasPerformance && typeof window.performance.setResourceTimingBufferSize === "function") {
+        if (ajaxHandler.hasPerformance && typeof window.performance.setResourceTimingBufferSize === 'function') {
             window.performance.setResourceTimingBufferSize(300);
         }
         // @ts-ignore
         xhr.open = function (method, url, async, user, password) {
             this.rpIndex = tempArray.length;
             tempArray.push(new AjaxTiming_1.default(url, method, async, ajaxHandler.now()));
-            open.call(this, method, url, (async === false) ? false : true, user, password);
+            open.call(this, method, url, async === false ? false : true, user, password);
         };
         xhr.send = function (data) {
             var _this = this;
@@ -188,34 +190,34 @@ var AjaxRequestsHandler = /** @class */ (function () {
                     case 4:
                         request.complete = ajaxHandler.now();
                         switch (_this.responseType) {
-                            case "text":
-                            case "":
-                                if (typeof _this.responseText === "string") {
+                            case 'text':
+                            case '':
+                                if (typeof _this.responseText === 'string') {
                                     request.responseSize = _this.responseText.length;
                                 }
                                 break;
-                            case "json":
-                                if (hasResponse && typeof _this.response.toString === "function") {
+                            case 'json':
+                                if (hasResponse && typeof _this.response.toString === 'function') {
                                     request.responseSize = _this.response.toString().length;
                                 }
                                 break;
-                            case "arraybuffer":
-                                if (hasResponse && typeof _this.response.byteLength === "number") {
+                            case 'arraybuffer':
+                                if (hasResponse && typeof _this.response.byteLength === 'number') {
                                     request.responseSize = _this.response.byteLength;
                                 }
                                 break;
-                            case "blob":
-                                if (hasResponse && typeof _this.response.size === "number") {
+                            case 'blob':
+                                if (hasResponse && typeof _this.response.size === 'number') {
                                     request.responseSize = _this.response.size;
                                 }
                                 break;
-                            case "document":
+                            case 'document':
                                 break;
                         }
                         ajaxHandler.processPerformanceEntries(request, ajaxHandler.fetchRequests);
                         break;
                 }
-                if (typeof changeFunc === "function") {
+                if (typeof changeFunc === 'function') {
                     changeFunc.call(_this, arg);
                 }
             };
@@ -258,8 +260,8 @@ var AjaxTiming = /** @class */ (function () {
             _this.wait = entry.responseStart - entry.requestStart;
             _this.start = entry.startTime;
             _this.redirect = entry.redirectEnd - entry.redirectStart;
-            if (entry["secureConnectionStart"]) {
-                _this.ssl = entry.connectEnd - entry["secureConnectionStart"];
+            if (entry['secureConnectionStart']) {
+                _this.ssl = entry.connectEnd - entry['secureConnectionStart'];
             }
         };
         this.url = url;
@@ -313,7 +315,7 @@ var EventsTimingHandler = /** @class */ (function () {
         this.timeoutId = undefined;
         this.startTime = new Date().getTime();
         this.now = function () {
-            return (new Date()).getTime();
+            return new Date().getTime();
         };
         // @ts-ignore
         this.startVisibilityCapture = function () {
@@ -324,7 +326,7 @@ var EventsTimingHandler = /** @class */ (function () {
             var values = _this.hiddenStrings;
             var propertyIndex = 0;
             for (var i = 0; i < values.length; i++) {
-                if (typeof (document[values[i]]) !== 'undefined') {
+                if (typeof document[values[i]] !== 'undefined') {
                     propertyIndex = i;
                 }
             }
@@ -397,8 +399,7 @@ var EventsTimingHandler = /** @class */ (function () {
             var currentFocusIndex = resetIndex;
             var hiddenTimeLapsed = 0;
             while (index < events.length) {
-                if (events[index].type === types_1.VisibilityType.Blur &&
-                    currentBlurIndex === resetIndex) {
+                if (events[index].type === types_1.VisibilityType.Blur && currentBlurIndex === resetIndex) {
                     currentBlurIndex = index;
                 }
                 var isNewFocusEvent = currentFocusIndex === resetIndex && currentBlurIndex !== resetIndex;
@@ -416,7 +417,7 @@ var EventsTimingHandler = /** @class */ (function () {
                 }
                 index = index + 1;
             }
-            if (currentBlurIndex === (events.length - 1)) {
+            if (currentBlurIndex === events.length - 1) {
                 hiddenTimeLapsed += _this.now() - events[currentBlurIndex].time;
             }
             return hiddenTimeLapsed;
@@ -484,20 +485,14 @@ var InputDelayHandler = /** @class */ (function () {
         this.startTime = 0;
         this.delay = 0;
         this.profileManager = new ProfilerEventManager_1.default();
-        this.eventTypes = [
-            'click',
-            'mousedown',
-            'keydown',
-            'touchstart',
-            'pointerdown',
-        ];
+        this.eventTypes = ['click', 'mousedown', 'keydown', 'touchstart', 'pointerdown'];
         this.addEventListeners = function () {
             _this.eventTypes.forEach(function (event) {
                 _this.profileManager.add(event, document, _this.onInput);
             });
         };
         this.now = function () {
-            return (new Date()).getTime();
+            return new Date().getTime();
         };
         this.removeEventListeners = function () {
             _this.eventTypes.forEach(function (event) {
@@ -538,7 +533,7 @@ var InputDelayHandler = /** @class */ (function () {
             _this.profileManager.remove('pointercancel', document, _this.onPointerCancel);
         };
         this.updateFirstInputDelay = function () {
-            if (_this.delay >= 0 && _this.delay < (_this.firstInputTimeStamp - _this.startTime)) {
+            if (_this.delay >= 0 && _this.delay < _this.firstInputTimeStamp - _this.startTime) {
                 _this.firstInputDelay = Math.round(_this.delay);
             }
         };
@@ -589,7 +584,7 @@ var ProfilerEventManager = /** @class */ (function () {
     ProfilerEventManager.prototype.add = function (type, target, func) {
         this.events.push({ type: type, target: target, func: func });
         if (this.hasAttachEvent) {
-            target.attachEvent("on" + type, func);
+            target.attachEvent('on' + type, func);
         }
         else {
             target.addEventListener(type, func, false);
@@ -639,7 +634,7 @@ var ProfilerJsError = /** @class */ (function () {
         this.lineNumber = lineNumber;
     }
     ProfilerJsError.createText = function (msg, url, num) {
-        return [msg, url, num].join(":");
+        return [msg, url, num].join(':');
     };
     ProfilerJsError.prototype.getText = function () {
         return ProfilerJsError.createText(this.message, this.url, this.lineNumber);
@@ -673,13 +668,13 @@ var ProfilerJsError_1 = __importDefault(__webpack_require__(/*! ./ProfilerJsErro
 var RProfiler = /** @class */ (function () {
     function RProfiler() {
         var _this = this;
-        // private restUrl: string = "{{restUrl}}";
-        this.restUrl = "portalstage.catchpoint.com/jp/1826/v3.3.8/M";
-        this.startTime = (new Date()).getTime();
+        // private restUrl: string = '{{restUrl}}';
+        this.restUrl = 'portalstage.catchpoint.com/jp/1826/v3.3.11/M';
+        this.startTime = new Date().getTime();
         this.eventsTimingHandler = new EventsTimingHandler_1.default();
         this.inputDelay = new InputDelayHandler_1.default();
-        // version: string = "{{version}}"; //version number of inline script
-        this.version = "v3.3.8"; //version number of inline script
+        // version: string = '{{version}}'; //version number of inline script
+        this.version = 'v3.3.11'; //version number of inline script
         this.info = {};
         this.hasInsight = false;
         this.data = {
@@ -687,7 +682,7 @@ var RProfiler = /** @class */ (function () {
             jsCount: 0,
             jsErrors: [],
             loadTime: -1,
-            loadFired: window.document.readyState == "complete",
+            loadFired: window.document.readyState == 'complete'
         };
         this.eventManager = new ProfilerEventManager_1.default();
         this.setCLS = function (_a) {
@@ -707,7 +702,7 @@ var RProfiler = /** @class */ (function () {
             _this.inp = INP;
         };
         this.recordPageLoad = function () {
-            _this.data.loadTime = (new Date()).getTime();
+            _this.data.loadTime = new Date().getTime();
             _this.data.loadFired = true;
         };
         this.addError = function (msg, url, lineNum) {
@@ -779,12 +774,12 @@ var RProfiler = /** @class */ (function () {
         };
         this.attachIframe = function () {
             var protocol = window.location.protocol;
-            var iframe = document.createElement("iframe");
-            iframe.src = "about:blank";
+            var iframe = document.createElement('iframe');
+            iframe.src = 'about:blank';
             var style = iframe.style;
-            style.position = "absolute";
-            style.top = "-10000px";
-            style.left = "-1000px";
+            style.position = 'absolute';
+            style.top = '-10000px';
+            style.left = '-1000px';
             iframe.addEventListener('load', function (event) {
                 var frame = event.currentTarget;
                 if (frame && frame.contentDocument) {
@@ -810,13 +805,13 @@ var RProfiler = /** @class */ (function () {
             if (ev.nodeType == 3) {
                 ev = ev.parentNode;
             }
-            errorFunc("N/A", ev.src || ev.URL, -1);
+            errorFunc('N/A', ev.src || ev.URL, -1);
             return false;
         }
-        if (!!window["opera"]) {
+        if (!!window['opera']) {
             this.eventManager.add(types_1.WindowEvent.Error, document, recordJsError);
         }
-        else if ("onerror" in window) {
+        else if ('onerror' in window) {
             var origOnError = window.onerror;
             window.onerror = function (msg, url, lineNum) {
                 errorFunc(msg, url !== null && url !== void 0 ? url : '', lineNum !== null && lineNum !== void 0 ? lineNum : 0);
@@ -827,26 +822,26 @@ var RProfiler = /** @class */ (function () {
             };
         }
         // Event to capture the errors in promise rejection
-        if ("onunhandledrejection" in window) {
+        if ('onunhandledrejection' in window) {
             window.onunhandledrejection = function (errorEvent) {
                 var _a, _b, _c;
-                var fullMessage = (_a = errorEvent.reason.stack) !== null && _a !== void 0 ? _a : "";
-                var errorMsg = fullMessage !== "" ? fullMessage.split("at") : [];
-                var fileUrl = errorMsg[1] ? errorMsg[1].replace(/:\d+/g, "") : "";
+                var fullMessage = (_a = errorEvent.reason.stack) !== null && _a !== void 0 ? _a : '';
+                var errorMsg = fullMessage !== '' ? fullMessage.split('at') : [];
+                var fileUrl = errorMsg[1] ? errorMsg[1].replace(/:\d+/g, '') : '';
                 var errorLineNumbers = errorMsg[1] ? errorMsg[1].match(/:\d+/g) : [];
-                var lineNum = errorLineNumbers[0] ? errorLineNumbers[0].replace(":", "") : 0;
-                errorFunc((_c = (_b = errorMsg[0]) === null || _b === void 0 ? void 0 : _b.trim()) !== null && _c !== void 0 ? _c : "N/A", fileUrl.trim(), lineNum);
+                var lineNum = errorLineNumbers[0] ? errorLineNumbers[0].replace(':', '') : 0;
+                errorFunc((_c = (_b = errorMsg[0]) === null || _b === void 0 ? void 0 : _b.trim()) !== null && _c !== void 0 ? _c : 'N/A', fileUrl.trim(), lineNum);
             };
         }
-        if (!!window["__cpCdnPath"]) {
-            this.restUrl = window["__cpCdnPath"].trim();
+        if (!!window['__cpCdnPath']) {
+            this.restUrl = window['__cpCdnPath'].trim();
         }
     }
     RProfiler.prototype.isNullOrEmpty = function (val) {
         if (val === undefined || val === null) {
             return true;
         }
-        if (typeof val == "string") {
+        if (typeof val == 'string') {
             var str = val;
             return str.trim().length == 0;
         }
@@ -854,7 +849,7 @@ var RProfiler = /** @class */ (function () {
     };
     RProfiler.prototype.dispatchCustomEvent = function (event) {
         (function (w) {
-            if (typeof w.CustomEvent === "function") {
+            if (typeof w.CustomEvent === 'function') {
                 return false;
             }
             function CustomEvent(event, params) {
@@ -874,9 +869,9 @@ var RProfiler = /** @class */ (function () {
 }());
 exports["default"] = RProfiler;
 var profiler = new RProfiler();
-window["RProfiler"] = profiler;
-window["WindowEvent"] = types_1.WindowEvent;
-// if the document state is already complete by the time script is injected - can happen in the case of tag managers like GTM 
+window['RProfiler'] = profiler;
+window['WindowEvent'] = types_1.WindowEvent;
+// if the document state is already complete by the time script is injected - can happen in the case of tag managers like GTM
 if (document.readyState === 'complete') {
     profiler.attachIframe();
 }
@@ -887,7 +882,7 @@ else {
         }
     };
 }
-profiler.dispatchCustomEvent("GlimpseLoaded");
+profiler.dispatchCustomEvent('GlimpseLoaded');
 
 
 /***/ }),
@@ -901,7 +896,7 @@ profiler.dispatchCustomEvent("GlimpseLoaded");
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.PostType = exports.VisibilityType = exports.WindowEvent = void 0;
+exports.WinHttpMethod = exports.CookieIdentifier = exports.Metrics = exports.PostType = exports.VisibilityType = exports.WindowEvent = void 0;
 var WindowEvent;
 (function (WindowEvent) {
     WindowEvent["Load"] = "load";
@@ -915,7 +910,6 @@ var VisibilityType;
     VisibilityType[VisibilityType["Focus"] = 0] = "Focus";
     VisibilityType[VisibilityType["Blur"] = 1] = "Blur";
 })(VisibilityType || (exports.VisibilityType = VisibilityType = {}));
-;
 // enum definition matches core enum
 var PostType;
 (function (PostType) {
@@ -924,6 +918,38 @@ var PostType;
     PostType[PostType["OnAbort"] = 2] = "OnAbort";
     PostType[PostType["Flush"] = 3] = "Flush";
 })(PostType || (exports.PostType = PostType = {}));
+var Metrics;
+(function (Metrics) {
+    Metrics[Metrics["DNS"] = 0] = "DNS";
+    Metrics[Metrics["Connect"] = 1] = "Connect";
+    Metrics[Metrics["Load"] = 2] = "Load";
+    Metrics[Metrics["Wait"] = 3] = "Wait";
+    Metrics[Metrics["Start"] = 4] = "Start";
+    Metrics[Metrics["Redirect"] = 5] = "Redirect";
+    Metrics[Metrics["Duration"] = 6] = "Duration";
+    Metrics[Metrics["SSL"] = 7] = "SSL";
+})(Metrics || (exports.Metrics = Metrics = {}));
+var CookieIdentifier;
+(function (CookieIdentifier) {
+    CookieIdentifier["UserId"] = "u";
+    CookieIdentifier["SessionId"] = "s";
+    CookieIdentifier["SessionTime"] = "t";
+    CookieIdentifier["PageViewCount"] = "c";
+    CookieIdentifier["UrlCheckSum"] = "k";
+    CookieIdentifier["PostFlag"] = "f";
+})(CookieIdentifier || (exports.CookieIdentifier = CookieIdentifier = {}));
+// defined in CP.Common.Interfaces
+var WinHttpMethod;
+(function (WinHttpMethod) {
+    WinHttpMethod[WinHttpMethod["GET"] = 0] = "GET";
+    WinHttpMethod[WinHttpMethod["POST"] = 1] = "POST";
+    WinHttpMethod[WinHttpMethod["HEAD"] = 2] = "HEAD";
+    WinHttpMethod[WinHttpMethod["DELETE"] = 3] = "DELETE";
+    WinHttpMethod[WinHttpMethod["OPTIONS"] = 4] = "OPTIONS";
+    WinHttpMethod[WinHttpMethod["PUT"] = 5] = "PUT";
+    WinHttpMethod[WinHttpMethod["TRACE"] = 6] = "TRACE";
+    WinHttpMethod[WinHttpMethod["CONNECT"] = 7] = "CONNECT";
+})(WinHttpMethod || (exports.WinHttpMethod = WinHttpMethod = {}));
 
 
 /***/ }),
