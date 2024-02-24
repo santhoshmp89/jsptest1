@@ -901,7 +901,7 @@ profiler.dispatchCustomEvent("GlimpseLoaded");
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.WinHttpMethod = exports.CookieIdentifier = exports.Metrics = exports.PostType = exports.VisibilityType = exports.WindowEvent = void 0;
+exports.PostType = exports.VisibilityType = exports.WindowEvent = void 0;
 var WindowEvent;
 (function (WindowEvent) {
     WindowEvent["Load"] = "load";
@@ -924,38 +924,6 @@ var PostType;
     PostType[PostType["OnAbort"] = 2] = "OnAbort";
     PostType[PostType["Flush"] = 3] = "Flush";
 })(PostType || (exports.PostType = PostType = {}));
-var Metrics;
-(function (Metrics) {
-    Metrics[Metrics["DNS"] = 0] = "DNS";
-    Metrics[Metrics["Connect"] = 1] = "Connect";
-    Metrics[Metrics["Load"] = 2] = "Load";
-    Metrics[Metrics["Wait"] = 3] = "Wait";
-    Metrics[Metrics["Start"] = 4] = "Start";
-    Metrics[Metrics["Redirect"] = 5] = "Redirect";
-    Metrics[Metrics["Duration"] = 6] = "Duration";
-    Metrics[Metrics["SSL"] = 7] = "SSL";
-})(Metrics || (exports.Metrics = Metrics = {}));
-var CookieIdentifier;
-(function (CookieIdentifier) {
-    CookieIdentifier["UserId"] = "u";
-    CookieIdentifier["SessionId"] = "s";
-    CookieIdentifier["SessionTime"] = "t";
-    CookieIdentifier["PageViewCount"] = "c";
-    CookieIdentifier["UrlCheckSum"] = "k";
-    CookieIdentifier["PostFlag"] = "f";
-})(CookieIdentifier || (exports.CookieIdentifier = CookieIdentifier = {}));
-// defined in CP.Common.Interfaces
-var WinHttpMethod;
-(function (WinHttpMethod) {
-    WinHttpMethod[WinHttpMethod["GET"] = 0] = "GET";
-    WinHttpMethod[WinHttpMethod["POST"] = 1] = "POST";
-    WinHttpMethod[WinHttpMethod["HEAD"] = 2] = "HEAD";
-    WinHttpMethod[WinHttpMethod["DELETE"] = 3] = "DELETE";
-    WinHttpMethod[WinHttpMethod["OPTIONS"] = 4] = "OPTIONS";
-    WinHttpMethod[WinHttpMethod["PUT"] = 5] = "PUT";
-    WinHttpMethod[WinHttpMethod["TRACE"] = 6] = "TRACE";
-    WinHttpMethod[WinHttpMethod["CONNECT"] = 7] = "CONNECT";
-})(WinHttpMethod || (exports.WinHttpMethod = WinHttpMethod = {}));
 
 
 /***/ }),
