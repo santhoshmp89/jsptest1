@@ -668,13 +668,12 @@ var ProfilerJsError_1 = __importDefault(__webpack_require__(/*! ./ProfilerJsErro
 var RProfiler = /** @class */ (function () {
     function RProfiler() {
         var _this = this;
-        // private restUrl: string = '{{restUrl}}';
-        this.restUrl = 'portalstage.catchpoint.com/jp/1826/v3.3.8/M';
+        this.restUrl = 'portalstage.catchpoint.com/jp/1826/v3.3.11/M';
         this.startTime = new Date().getTime();
         this.eventsTimingHandler = new EventsTimingHandler_1.default();
         this.inputDelay = new InputDelayHandler_1.default();
         // version: string = '{{version}}'; //version number of inline script
-        this.version = 'v3.3.8'; //version number of inline script
+        this.version = 'v3_3_11'; //version number of inline script
         this.info = {};
         this.hasInsight = false;
         this.data = {
@@ -697,7 +696,7 @@ var RProfiler = /** @class */ (function () {
         };
         // Value being used instead delta as metricValue, Delta provide single value and value is for overall value.
         this.setINP = function (_a) {
-            var metricName = _a.name, metricValue = _a.value;
+            var metricName = _a.name, metricValue = _a.delta;
             var INP = metricName === 'INP' ? metricValue : undefined;
             _this.inp = INP;
         };
@@ -765,7 +764,7 @@ var RProfiler = /** @class */ (function () {
         this.getCPWebVitals = function () {
             (0, web_vitals_1.onCLS)(_this.setCLS);
             (0, web_vitals_1.onLCP)(_this.setLCP);
-            (0, web_vitals_1.onINP)(_this.setINP, { reportAllChanges: true });
+            (0, web_vitals_1.onINP)(_this.setINP);
             return {
                 cls: _this.cls,
                 lcp: _this.lcp,
@@ -798,8 +797,8 @@ var RProfiler = /** @class */ (function () {
         var errorFunc = this.addError;
         this.ajaxHandler = new AjaxRequestsHandler_1.default();
         (0, web_vitals_1.onCLS)(this.setCLS);
-        (0, web_vitals_1.onLCP)(this.setLCP, { reportAllChanges: true });
-        (0, web_vitals_1.onINP)(this.setINP, { reportAllChanges: true });
+        (0, web_vitals_1.onLCP)(this.setLCP);
+        (0, web_vitals_1.onINP)(this.setINP);
         function recordJsError(e) {
             var ev = e.target || e.srcElement;
             if (ev.nodeType == 3) {
