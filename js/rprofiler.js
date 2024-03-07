@@ -680,22 +680,23 @@ var MainConfig = /** @class */ (function () {
     MainConfig.now = function () {
         return new Date().getTime();
     };
-    var _a;
-    _a = MainConfig;
+    var _a, _b, _c, _d, _e;
+    var _f;
+    _f = MainConfig;
     MainConfig.pageWindow = parent.window;
-    MainConfig.location = _a.pageWindow.location;
-    MainConfig.profiler = _a.pageWindow['RProfiler'];
-    MainConfig.windowEvent = _a.pageWindow['WindowEvent'];
-    MainConfig.protocol = _a.location.protocol + '//';
+    MainConfig.location = _f.pageWindow.location;
+    MainConfig.profiler = _f.pageWindow['RProfiler'];
+    MainConfig.windowEvent = _f.pageWindow['WindowEvent'];
+    MainConfig.protocol = _f.location.protocol + '//';
     MainConfig.windowEventDef = {
-        Load: _a.windowEvent.Load,
-        BeforeUnload: _a.windowEvent.BeforeUnload,
-        Unload: _a.windowEvent.Unload,
-        Abort: _a.windowEvent.Abort,
-        Error: _a.windowEvent.Error
+        Load: (_a = _f.windowEvent) === null || _a === void 0 ? void 0 : _a.Load,
+        BeforeUnload: (_b = _f.windowEvent) === null || _b === void 0 ? void 0 : _b.BeforeUnload,
+        Unload: (_c = _f.windowEvent) === null || _c === void 0 ? void 0 : _c.Unload,
+        Abort: (_d = _f.windowEvent) === null || _d === void 0 ? void 0 : _d.Abort,
+        Error: (_e = _f.windowEvent) === null || _e === void 0 ? void 0 : _e.Error
     };
-    MainConfig.hasPerformanceApi = !!_a.pageWindow.performance && typeof _a.pageWindow.performance === 'object';
-    MainConfig.hasGetEntriesApi = _a.hasPerformanceApi && typeof _a.pageWindow.performance.getEntriesByType === 'function';
+    MainConfig.hasPerformanceApi = !!_f.pageWindow.performance && typeof _f.pageWindow.performance === 'object';
+    MainConfig.hasGetEntriesApi = _f.hasPerformanceApi && typeof _f.pageWindow.performance.getEntriesByType === 'function';
     MainConfig.testUserId = 123;
     // version: string = '{{version}}';
     MainConfig.version = 'v3.3.11';
@@ -705,7 +706,7 @@ var MainConfig = /** @class */ (function () {
         // waterfallSampleRate: -888, // range [0 - 100]
         waterfallSampleRate: 10, // range [0 - 100]
         // postUrl: protocol + '{{postUrl}}',
-        postUrl: _a.protocol + 'lst01a.3genlabs.net/hawklogserver/r.p',
+        postUrl: _f.protocol + 'lst01a.3genlabs.net/hawklogserver/r.p',
         // siteId: -111,
         siteId: 1826,
         // debugParameter: '{{debugParam}}',
