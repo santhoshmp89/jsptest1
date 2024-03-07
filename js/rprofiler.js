@@ -680,9 +680,6 @@ var MainConfig = /** @class */ (function () {
     MainConfig.now = function () {
         return new Date().getTime();
     };
-    MainConfig.setVersion = function (ver) {
-        this.version = ver;
-    };
     var _a;
     _a = MainConfig;
     MainConfig.pageWindow = parent.window;
@@ -781,7 +778,6 @@ var DataWrapper = /** @class */ (function () {
 ;// CONCATENATED MODULE: ./src/main/Util.ts
 
 
-var hasGetEntriesApi = config.hasGetEntriesApi, pageWindow = config.pageWindow, protocol = config.protocol, profiler = config.profiler;
 var Util = /** @class */ (function () {
     function Util() {
     }
@@ -826,7 +822,7 @@ var Util = /** @class */ (function () {
     Util.addScriptTag = function (url, scope) {
         var script = scope.document.createElement('script');
         script.type = 'text/javascript';
-        script.src = protocol + url;
+        script.src = config.protocol + url;
         scope.document.body.appendChild(script);
     };
     Util.getQueryStringValue = function (val) {
@@ -842,15 +838,15 @@ var Util = /** @class */ (function () {
         return '';
     };
     Util.stopEvents = function () {
-        if (!profiler) {
+        if (!config.profiler) {
             return;
         }
-        profiler.eventManager.clear();
-        profiler.getEventTimingHandler().clear();
+        config.profiler.eventManager.clear();
+        config.profiler.getEventTimingHandler().clear();
     };
     Util.getNavigationTime = function () {
         var timing = null;
-        var navigationTime = hasGetEntriesApi && pageWindow.performance.getEntriesByType('navigation');
+        var navigationTime = config.hasGetEntriesApi && config.pageWindow.performance.getEntriesByType('navigation');
         if (navigationTime && navigationTime.length !== 0) {
             timing = navigationTime[0];
         }
@@ -1555,20 +1551,19 @@ var PostData = /** @class */ (function (_super) {
 
 ;// CONCATENATED MODULE: ./src/main/Storage.ts
 
-var Storage_pageWindow = config.pageWindow;
 var Storage = /** @class */ (function () {
     function Storage() {
     }
     Storage.save = function (value) {
         if (Storage.canUseLocalStorage()) {
-            Storage_pageWindow.localStorage.setItem(Storage.storeKey, value);
+            config.pageWindow.localStorage.setItem(Storage.storeKey, value);
             return;
         }
         Storage.setCookie(value);
     };
     Storage.read = function () {
         if (Storage.canUseLocalStorage()) {
-            var store = Storage_pageWindow.localStorage.getItem(Storage.storeKey);
+            var store = config.pageWindow.localStorage.getItem(Storage.storeKey);
             if (store) {
                 return store;
             }
@@ -1580,11 +1575,11 @@ var Storage = /** @class */ (function () {
         try {
             var key = Storage.storeKey + 'delete';
             var value = key + 0;
-            Storage_pageWindow.localStorage.setItem(key, value);
-            var valueFromStorage = Storage_pageWindow.localStorage.getItem(key);
+            config.pageWindow.localStorage.setItem(key, value);
+            var valueFromStorage = config.pageWindow.localStorage.getItem(key);
             canUse = value === valueFromStorage;
             if (canUse) {
-                Storage_pageWindow.localStorage.removeItem(key);
+                config.pageWindow.localStorage.removeItem(key);
             }
         }
         catch (ex) {
@@ -1596,7 +1591,7 @@ var Storage = /** @class */ (function () {
         var date = new Date();
         date.setTime(date.getTime() + Storage.cookieExpireDays * 24 * 60 * 60 * 1000);
         var expires = '; expires=' + date.toUTCString();
-        var split = Storage_pageWindow.document.domain.split('.');
+        var split = config.pageWindow.document.domain.split('.');
         var length = split.length;
         var domain = split[length - 2] + '.' + split[length - 1];
         document.cookie =
@@ -1609,7 +1604,7 @@ var Storage = /** @class */ (function () {
                 '; SameSite=Lax;';
     };
     Storage.readCookie = function () {
-        var split = Storage_pageWindow.document.cookie.split(';');
+        var split = config.pageWindow.document.cookie.split(';');
         var regex = Storage.storeRegex;
         for (var _i = 0, split_1 = split; _i < split_1.length; _i++) {
             var c = split_1[_i];
@@ -1709,7 +1704,6 @@ var VisitorStorage = /** @class */ (function () {
 ;// CONCATENATED MODULE: ./src/main/Visitor.ts
 
 
-var Visitor_config = config.config, Visitor_profiler = config.profiler, testUserId = config.testUserId, Visitor_pageWindow = config.pageWindow;
 var Visitor = /** @class */ (function () {
     function Visitor() {
         this.sessionExpire = 30 * 60 * 1000;
@@ -1740,14 +1734,14 @@ var Visitor = /** @class */ (function () {
     };
     Visitor.prototype.checkAndResetPostFlags = function () {
         this.store.postFlag = 0;
-        if (Visitor_config.sampleRate < 0) {
+        if (config.config.sampleRate < 0) {
             this.store.postFlag = -1;
             return;
         }
-        var rate = this.getUserId(Visitor_config.sampleRate / 100);
+        var rate = this.getUserId(config.config.sampleRate / 100);
         if (this.store.userId <= rate) {
             this.store.postFlag = 1;
-            var waterfallRate = rate / (100 / Visitor_config.waterfallSampleRate);
+            var waterfallRate = rate / (100 / config.config.waterfallSampleRate);
             this.store.sendWaterfall = this.store.userId <= waterfallRate;
         }
     };
@@ -1772,9 +1766,9 @@ var Visitor = /** @class */ (function () {
         return url.substring(start, end);
     };
     Visitor.prototype.init = function () {
-        var start = Visitor_profiler.data.start;
+        var start = config.profiler.data.start;
         this.initStore();
-        if (this.store.userId == -1 || this.store.userId == testUserId) {
+        if (this.store.userId == -1 || this.store.userId == config.testUserId) {
             this.store.userId = this.getUserId();
         }
         this.checkAndResetPostFlags();
@@ -1786,14 +1780,14 @@ var Visitor = /** @class */ (function () {
             if (this.store.pageViewCount < 65535) {
                 this.store.pageViewCount++;
             }
-            if (this.getReferrer(Visitor_pageWindow.document.referrer) == this.store.urlCheckSum &&
+            if (this.getReferrer(config.pageWindow.document.referrer) == this.store.urlCheckSum &&
                 this.store.sessionTime > 0) {
                 this.store.exitToEntry = start - this.store.sessionTime;
             }
         }
         this.store.sessionTime = new Date().getTime();
         this.store.pageViewId = Math.floor(1 + Math.random() * ((Math.pow(2, 16) - 2) / 2));
-        this.store.urlCheckSum = this.getReferrer(Visitor_pageWindow.location.href);
+        this.store.urlCheckSum = this.getReferrer(config.pageWindow.location.href);
         this.store.resetViewCount();
         this.updateStore();
         var hasVisitorData = this.store.load();
@@ -2704,21 +2698,23 @@ var RProfiler = /** @class */ (function () {
     return RProfiler;
 }());
 /* harmony default export */ const rprofiler = (RProfiler);
-var rprofiler_profiler = new RProfiler();
-window['RProfiler'] = rprofiler_profiler;
+var profiler = new RProfiler();
+window['RProfiler'] = profiler;
 window['WindowEvent'] = WindowEvent;
 // if the document state is already complete by the time script is injected - can happen in the case of tag managers like GTM
-// if (document.readyState === 'complete') {
-//     profiler.attachIframe();
-// } else {
-//     document.onreadystatechange = () => {
-//         if (document.readyState === 'complete') {
-//             profiler.attachIframe();
-//         }
-//     };
-// }
-rprofiler_profiler.dispatchCustomEvent('GlimpseLoaded');
-main();
+if (document.readyState === 'complete') {
+    // profiler.attachIframe();
+    main();
+}
+else {
+    document.onreadystatechange = function () {
+        if (document.readyState === 'complete') {
+            // profiler.attachIframe();
+            main();
+        }
+    };
+}
+profiler.dispatchCustomEvent('GlimpseLoaded');
 
 /******/ })()
 ;
