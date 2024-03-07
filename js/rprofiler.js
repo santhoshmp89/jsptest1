@@ -680,6 +680,30 @@ var MainConfig = /** @class */ (function () {
     MainConfig.now = function () {
         return new Date().getTime();
     };
+    MainConfig.setVersion = function (ver) {
+        _f.version = ver;
+    };
+    MainConfig.setWindowEvent = function () {
+        _f.windowEvent = this.pageWindow['WindowEvent'];
+    };
+    MainConfig.setRProfiler = function () {
+        _f.profiler = this.pageWindow['RProfiler'];
+    };
+    MainConfig.setWindowEventDef = function () {
+        var _a, _b, _c, _d, _e;
+        _f.windowEventDef = {
+            Load: (_a = _f.windowEvent) === null || _a === void 0 ? void 0 : _a.Load,
+            BeforeUnload: (_b = _f.windowEvent) === null || _b === void 0 ? void 0 : _b.BeforeUnload,
+            Unload: (_c = _f.windowEvent) === null || _c === void 0 ? void 0 : _c.Unload,
+            Abort: (_d = _f.windowEvent) === null || _d === void 0 ? void 0 : _d.Abort,
+            Error: (_e = _f.windowEvent) === null || _e === void 0 ? void 0 : _e.Error
+        };
+    };
+    MainConfig.initValues = function () {
+        _f.setWindowEvent();
+        _f.setRProfiler();
+        _f.setWindowEventDef();
+    };
     var _a, _b, _c, _d, _e;
     var _f;
     _f = MainConfig;
@@ -2493,6 +2517,7 @@ var mainScript = function () {
 
 
 
+
 var RProfiler = /** @class */ (function () {
     function RProfiler() {
         var _this = this;
@@ -2705,12 +2730,14 @@ window['WindowEvent'] = WindowEvent;
 // if the document state is already complete by the time script is injected - can happen in the case of tag managers like GTM
 if (document.readyState === 'complete') {
     // profiler.attachIframe();
+    config.initValues();
     main();
 }
 else {
     document.onreadystatechange = function () {
         if (document.readyState === 'complete') {
             // profiler.attachIframe();
+            config.initValues();
             main();
         }
     };
