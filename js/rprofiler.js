@@ -2539,40 +2539,47 @@ var __generator = (undefined && undefined.__generator) || function (thisArg, bod
 };
 
 
-var mainScript = function () {
-    if (!document.getElementById || !(window['attachEvent'] || window.addEventListener)) {
-        return;
-    }
-    if (!config.windowEvent || !config.profiler) {
-        return;
-    }
-    if (!!config.pageWindow['__cpPostUrl']) {
-        config.config.postUrl = config.pageWindow['__cpPostUrl'].trim();
-    }
-    if (!!config.pageWindow['__cpSendOnLoad']) {
-        config.config.sendOnLoad = config.pageWindow['__cpSendOnLoad'] === true;
-    }
-    var getAppDetails = function () { return __awaiter(void 0, void 0, void 0, function () {
-        var response, data;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, fetch('https://jsonplaceholder.typicode.com/todos/1')];
-                case 1:
-                    response = _a.sent();
-                    return [4 /*yield*/, response.json()];
-                case 2:
-                    data = _a.sent();
-                    return [2 /*return*/, data];
-            }
-        });
-    }); };
-    // @ts-ignore
-    var appDetails = getAppDetails();
-    config.setVersion('v3.3.11');
-    config.setAppConfig({ siteId: 1826, sampleRate: 100 });
-    // @ts-ignore
-    var provider = new main_DataProvider();
-};
+var mainScript = function () { return __awaiter(void 0, void 0, void 0, function () {
+    var getAppDetails, appDetails, provider;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                if (!document.getElementById || !(window['attachEvent'] || window.addEventListener)) {
+                    return [2 /*return*/];
+                }
+                if (!config.windowEvent || !config.profiler) {
+                    return [2 /*return*/];
+                }
+                if (!!config.pageWindow['__cpPostUrl']) {
+                    config.config.postUrl = config.pageWindow['__cpPostUrl'].trim();
+                }
+                if (!!config.pageWindow['__cpSendOnLoad']) {
+                    config.config.sendOnLoad = config.pageWindow['__cpSendOnLoad'] === true;
+                }
+                getAppDetails = function () { return __awaiter(void 0, void 0, void 0, function () {
+                    var response, data;
+                    return __generator(this, function (_a) {
+                        switch (_a.label) {
+                            case 0: return [4 /*yield*/, fetch('https://portalstage.catchpoint.com/jp/1826/v4.0.0/AC')];
+                            case 1:
+                                response = _a.sent();
+                                return [4 /*yield*/, response.json()];
+                            case 2:
+                                data = _a.sent();
+                                return [2 /*return*/, data];
+                        }
+                    });
+                }); };
+                return [4 /*yield*/, getAppDetails()];
+            case 1:
+                appDetails = _a.sent();
+                config.setVersion('v3.3.11');
+                config.setAppConfig({ siteId: appDetails.AppId, sampleRate: appDetails.SampleRate });
+                provider = new main_DataProvider();
+                return [2 /*return*/];
+        }
+    });
+}); };
 // mainScript();
 /* harmony default export */ const main = (mainScript);
 
