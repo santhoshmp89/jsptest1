@@ -2589,13 +2589,13 @@ var mainScript = function () {
 var RProfiler = /** @class */ (function () {
     function RProfiler() {
         var _this = this;
-        // private restUrl: string = '{{restUrl}}';
-        this.restUrl = 'portalstage.catchpoint.com/jp/1826/v3.3.11/M';
+        this.restUrl = '{{restUrl}}';
+        // private restUrl: string = 'portalstage.catchpoint.com/jp/1826/v3.3.11/M';
         this.startTime = new Date().getTime();
         this.eventsTimingHandler = new rprofiler_EventsTimingHandler();
         this.inputDelay = new rprofiler_InputDelayHandler();
-        // version: string = '{{version}}'; //version number of inline script
-        this.version = 'v3.3.11'; //version number of inline script
+        this.version = '{{version}}'; //version number of inline script
+        // version: string = 'v3.3.11'; //version number of inline script
         this.info = {};
         this.hasInsight = false;
         this.data = {
