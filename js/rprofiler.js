@@ -691,9 +691,6 @@ var MainConfig = /** @class */ (function () {
     MainConfig.now = function () {
         return new Date().getTime();
     };
-    MainConfig.setVersion = function (ver) {
-        _f.version = ver;
-    };
     MainConfig.setWindowEvent = function () {
         _f.windowEvent = this.pageWindow['WindowEvent'];
     };
@@ -737,28 +734,17 @@ var MainConfig = /** @class */ (function () {
     MainConfig.hasGetEntriesApi = _f.hasPerformanceApi && typeof _f.pageWindow.performance.getEntriesByType === 'function';
     MainConfig.testUserId = 123;
     MainConfig.version = '{{version}}';
-    // static version: string = 'v3.3.11';
     MainConfig.config = {
         sampleRate: -999, // range [0 - 100]
-        // sampleRate: 100, // range [0 - 100]
-        // waterfallSampleRate: -888, // range [0 - 100]
-        waterfallSampleRate: 10, // range [0 - 100]
-        // postUrl: protocol + '{{postUrl}}',
-        postUrl: _f.protocol + 'lst01a.3genlabs.net/hawklogserver/r.p',
+        waterfallSampleRate: -888, // range [0 - 100]
+        postUrl: _f.protocol + '{{postUrl}}',
         siteId: -111,
-        // siteId: 1826,
-        // debugParameter: '{{debugParam}}',
-        debugParameter: 'GlimpseDebug',
-        // debugUrl: '{{debugUrl}}',
-        debugUrl: 'portalstage.catchpoint.com/jp/v3.3.11/D',
-        // waterfallParameter: '{{wfallParam}}',
-        waterfallParameter: 'GlimpseWaterfall',
-        // sendOnLoad: false, // default is send onunload
+        debugParameter: '{{debugParam}}',
+        debugUrl: '{{debugUrl}}',
+        waterfallParameter: '{{wfallParam}}',
         sendOnLoad: false, // default is send onunload
-        // clearResources: true, // clear performance entries when we send data to core. using performance.clearResourceTimings()
         clearResources: true, // clear performance entries when we send data to core. using performance.clearResourceTimings()
-        // ajaxDomains: '{{ajaxDomains}}'
-        ajaxDomains: ''
+        ajaxDomains: '{{ajaxDomains}}'
     };
     return MainConfig;
 }());
@@ -857,12 +843,6 @@ var Util = /** @class */ (function () {
     };
     Util.getRoundedValue = function (value) {
         return value ? Math.round(value) : value;
-    };
-    Util.addScriptTag = function (url, scope) {
-        var script = scope.document.createElement('script');
-        script.type = 'text/javascript';
-        script.src = config.protocol + url;
-        scope.document.body.appendChild(script);
     };
     Util.getQueryStringValue = function (val) {
         var query = location.search.substring(1);
@@ -2067,7 +2047,6 @@ var DataProvider = /** @class */ (function () {
                     _this.doPost(PostType.OnBeforeUnload, false);
                 };
                 main_Util.stopEvents();
-                main_Util.addScriptTag(config.config.debugUrl, config.pageWindow);
                 return;
             }
             _this.visitor.updateSessionTime();
@@ -2539,44 +2518,46 @@ var __generator = (undefined && undefined.__generator) || function (thisArg, bod
 };
 
 
-var mainScript = function () {
-    if (!document.getElementById || !(window['attachEvent'] || window.addEventListener)) {
-        return;
-    }
-    if (!config.windowEvent || !config.profiler) {
-        return;
-    }
-    if (!!config.pageWindow['__cpPostUrl']) {
-        config.config.postUrl = config.pageWindow['__cpPostUrl'].trim();
-    }
-    if (!!config.pageWindow['__cpSendOnLoad']) {
-        config.config.sendOnLoad = config.pageWindow['__cpSendOnLoad'] === true;
-    }
-    var getAppDetails = function () { return __awaiter(void 0, void 0, void 0, function () {
-        var response, data;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, fetch('https://portalstage.catchpoint.com/jp/1826/v4.0.0/AC')];
-                case 1:
-                    response = _a.sent();
-                    return [4 /*yield*/, response.json()];
-                case 2:
-                    data = _a.sent();
-                    return [2 /*return*/, data];
-            }
-        });
-    }); };
-    getAppDetails().then(function (res) {
-        config.setVersion('v3.3.11');
-        config.setAppConfig({ siteId: res.AppId, sampleRate: res.SampleRate });
+var mainScript = function () { return __awaiter(void 0, void 0, void 0, function () {
+    var getAppDetails, appDetails, provider;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                if (!document.getElementById || !(window['attachEvent'] || window.addEventListener)) {
+                    return [2 /*return*/];
+                }
+                if (!config.windowEvent || !config.profiler) {
+                    return [2 /*return*/];
+                }
+                if (!!config.pageWindow['__cpPostUrl']) {
+                    config.config.postUrl = config.pageWindow['__cpPostUrl'].trim();
+                }
+                if (!!config.pageWindow['__cpSendOnLoad']) {
+                    config.config.sendOnLoad = config.pageWindow['__cpSendOnLoad'] === true;
+                }
+                getAppDetails = function () { return __awaiter(void 0, void 0, void 0, function () {
+                    var response, data;
+                    return __generator(this, function (_a) {
+                        switch (_a.label) {
+                            case 0: return [4 /*yield*/, fetch('{{configAjaxUrl}}')];
+                            case 1:
+                                response = _a.sent();
+                                return [4 /*yield*/, response.json()];
+                            case 2:
+                                data = _a.sent();
+                                return [2 /*return*/, data];
+                        }
+                    });
+                }); };
+                return [4 /*yield*/, getAppDetails()];
+            case 1:
+                appDetails = _a.sent();
+                config.setAppConfig({ siteId: 1826, sampleRate: 100, ajaxDomains: '', waterfallSampleRate: 100 });
+                provider = new main_DataProvider();
+                return [2 /*return*/];
+        }
     });
-    // const appDetails = await getAppDetails();
-    // MainConfig.setVersion('v3.3.11');
-    // MainConfig.setAppConfig({ siteId: appDetails.AppId, sampleRate: appDetails.SampleRate });
-    // @ts-ignore
-    var provider = new main_DataProvider();
-};
-// mainScript();
+}); };
 /* harmony default export */ const main = (mainScript);
 
 ;// CONCATENATED MODULE: ./src/rprofiler/rprofiler.ts
@@ -2592,13 +2573,12 @@ var mainScript = function () {
 var RProfiler = /** @class */ (function () {
     function RProfiler() {
         var _this = this;
+        // @ts-ignore
         this.restUrl = '{{restUrl}}';
-        // private restUrl: string = 'portalstage.catchpoint.com/jp/1826/v3.3.11/M';
         this.startTime = new Date().getTime();
         this.eventsTimingHandler = new rprofiler_EventsTimingHandler();
         this.inputDelay = new rprofiler_InputDelayHandler();
         this.version = '{{version}}'; //version number of inline script
-        // version: string = 'v3.3.11'; //version number of inline script
         this.info = {};
         this.hasInsight = false;
         this.data = {
@@ -2699,28 +2679,6 @@ var RProfiler = /** @class */ (function () {
                 inp: _this.inp
             };
         };
-        this.attachIframe = function () {
-            var protocol = window.location.protocol;
-            var iframe = document.createElement('iframe');
-            iframe.src = 'about:blank';
-            var style = iframe.style;
-            style.position = 'absolute';
-            style.top = '-10000px';
-            style.left = '-1000px';
-            iframe.addEventListener('load', function (event) {
-                var frame = event.currentTarget;
-                if (frame && frame.contentDocument) {
-                    var iframeDocument = frame.contentDocument;
-                    var rumScript = iframeDocument.createElement('script');
-                    rumScript.type = 'text/javascript';
-                    rumScript.src = protocol + '//' + _this.restUrl;
-                    iframeDocument.body.appendChild(rumScript);
-                }
-            });
-            if (document.body) {
-                document.body.insertAdjacentElement('afterbegin', iframe);
-            }
-        };
         this.eventManager.add(WindowEvent.Load, window, this.recordPageLoad);
         var errorFunc = this.addError;
         this.ajaxHandler = new rprofiler_AjaxRequestsHandler();
@@ -2800,14 +2758,12 @@ window['RProfiler'] = profiler;
 window['WindowEvent'] = WindowEvent;
 // if the document state is already complete by the time script is injected - can happen in the case of tag managers like GTM
 if (document.readyState === 'complete') {
-    // profiler.attachIframe();
     config.initValues();
     main();
 }
 else {
     document.onreadystatechange = function () {
         if (document.readyState === 'complete') {
-            // profiler.attachIframe();
             config.initValues();
             main();
         }
