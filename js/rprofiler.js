@@ -732,16 +732,16 @@ var MainConfig = /** @class */ (function () {
     };
     MainConfig.hasPerformanceApi = !!_f.pageWindow.performance && typeof _f.pageWindow.performance === 'object';
     MainConfig.hasGetEntriesApi = _f.hasPerformanceApi && typeof _f.pageWindow.performance.getEntriesByType === 'function';
-    MainConfig.testUserId = 123;
-    MainConfig.version = '{{version}}';
+    MainConfig.testUserId = "test";
+    MainConfig.version = 'v4.0.0';
     MainConfig.config = {
         sampleRate: -999, // range [0 - 100]
         waterfallSampleRate: -888, // range [0 - 100]
-        postUrl: _f.protocol + '{{postUrl}}',
-        siteId: -111,
-        debugParameter: '{{debugParam}}',
-        debugUrl: '{{debugUrl}}',
-        waterfallParameter: '{{wfallParam}}',
+        postUrl: _f.protocol + 'lst01a.3genlabs.net/hawklogserver/r.p',
+        siteId: 1826,
+        debugParameter: 'GlimpseDebug',
+        debugUrl: 'localhost:44394/jp/v4.0.0/s.D',
+        waterfallParameter: 'GlimpseWaterfall',
         sendOnLoad: false, // default is send onunload
         clearResources: true, // clear performance entries when we send data to core. using performance.clearResourceTimings()
         ajaxDomains: '{{ajaxDomains}}'
@@ -1634,7 +1634,7 @@ var Storage = /** @class */ (function () {
         return '';
     };
     Storage.cookieExpireDays = 365;
-    Storage.storeKey = '{{cookieName}}';
+    Storage.storeKey = '__CG';
     Storage.storeRegex = new RegExp('^(\\s)*' + Storage.storeKey + '=', 'i');
     return Storage;
 }());
@@ -2519,7 +2519,7 @@ var __generator = (undefined && undefined.__generator) || function (thisArg, bod
 
 
 var mainScript = function () { return __awaiter(void 0, void 0, void 0, function () {
-    var getAppDetails, appDetails, provider;
+    var getAppDetails, appDetails, error_1, provider;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -2539,7 +2539,7 @@ var mainScript = function () { return __awaiter(void 0, void 0, void 0, function
                     var response, data;
                     return __generator(this, function (_a) {
                         switch (_a.label) {
-                            case 0: return [4 /*yield*/, fetch('{{configAjaxUrl}}')];
+                            case 0: return [4 /*yield*/, fetch('https://localhost:44394/jp/1826/v4.0.0/s.AC')];
                             case 1:
                                 response = _a.sent();
                                 return [4 /*yield*/, response.json()];
@@ -2549,10 +2549,23 @@ var mainScript = function () { return __awaiter(void 0, void 0, void 0, function
                         }
                     });
                 }); };
-                return [4 /*yield*/, getAppDetails()];
+                _a.label = 1;
             case 1:
+                _a.trys.push([1, 3, , 4]);
+                return [4 /*yield*/, getAppDetails()];
+            case 2:
                 appDetails = _a.sent();
-                config.setAppConfig({ siteId: 1826, sampleRate: 100, ajaxDomains: '', waterfallSampleRate: 100 });
+                config.setAppConfig({
+                    sampleRate: appDetails.SampleRate,
+                    ajaxDomains: appDetails.AjaxDomains,
+                    waterfallSampleRate: appDetails.WaterfallSampleRate
+                });
+                return [3 /*break*/, 4];
+            case 3:
+                error_1 = _a.sent();
+                console.error('CP RUM Error', error_1);
+                return [3 /*break*/, 4];
+            case 4:
                 provider = new main_DataProvider();
                 return [2 /*return*/];
         }
@@ -2574,11 +2587,11 @@ var RProfiler = /** @class */ (function () {
     function RProfiler() {
         var _this = this;
         // @ts-ignore
-        this.restUrl = '{{restUrl}}';
+        this.restUrl = 'localhost:44394/jp/1826/v4.0.0/s.M';
         this.startTime = new Date().getTime();
         this.eventsTimingHandler = new rprofiler_EventsTimingHandler();
         this.inputDelay = new rprofiler_InputDelayHandler();
-        this.version = '{{version}}'; //version number of inline script
+        this.version = 'v4.0.0'; //version number of inline script
         this.info = {};
         this.hasInsight = false;
         this.data = {
