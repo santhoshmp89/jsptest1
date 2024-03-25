@@ -1,3 +1,4 @@
+
 /******/ (() => { // webpackBootstrap
 /******/ 	"use strict";
 /******/ 	// The require scope
@@ -35,7 +36,7 @@
 /************************************************************************/
 var __webpack_exports__ = {};
 /*!*************************************************!*\
-  !*** ./src/rprofiler/rprofiler.ts + 24 modules ***!
+  !*** ./src/rprofiler/rprofiler.ts + 26 modules ***!
   \*************************************************/
 // ESM COMPAT FLAG
 __webpack_require__.r(__webpack_exports__);
@@ -740,7 +741,7 @@ var MainConfig = /** @class */ (function () {
         postUrl: _f.protocol + 'lst01a.3genlabs.net/hawklogserver/r.p',
         siteId: 1826,
         debugParameter: 'GlimpseDebug',
-        debugUrl: 'localhost:44394/jp/v4.0.0/s.D',
+        debugUrl: 'portalstage.catchpoint.com/jp/v4.0.0/D',
         waterfallParameter: 'GlimpseWaterfall',
         sendOnLoad: false, // default is send onunload
         clearResources: true, // clear performance entries when we send data to core. using performance.clearResourceTimings()
@@ -2539,7 +2540,7 @@ var mainScript = function () { return __awaiter(void 0, void 0, void 0, function
                     var response, data;
                     return __generator(this, function (_a) {
                         switch (_a.label) {
-                            case 0: return [4 /*yield*/, fetch('https://localhost:44394/jp/1826/v4.0.0/s.AC')];
+                            case 0: return [4 /*yield*/, fetch('https://portalstage.catchpoint.com/jp/1826/v4.0.0/AC')];
                             case 1:
                                 response = _a.sent();
                                 return [4 /*yield*/, response.json()];
@@ -2573,7 +2574,401 @@ var mainScript = function () { return __awaiter(void 0, void 0, void 0, function
 }); };
 /* harmony default export */ const main = (mainScript);
 
+;// CONCATENATED MODULE: ./src/utils.ts
+var extractImageUrl = function (backgroundImage) {
+    if (backgroundImage && backgroundImage.startsWith('url')) {
+        var match = backgroundImage.match(/url\(["']?([^"']*)["']?\)/);
+        var url = match && match.length > 1 && match[1];
+        if (url && !url.startsWith('data')) {
+            return url;
+        }
+    }
+    return null;
+};
+
+;// CONCATENATED MODULE: ./src/visComplete.ts
+
+/**
+ * Visually completed is calculated using Mutation observer, when elements added to the page we are tracking the time stamp.
+ * After page load VisComplete listen to mutations for 5sec and will disconnect mutation observer.
+ * If the difference between previous mutation and the current mutation is greater than 1000ms mutation observer will be disconnected.
+ * VisComplete also listen to all the resources being loaded on the page (till 2s after page load) and take the end time of the last resource.
+ * Max value of the Mutation and the last resource to get the response will be considered as Visually complete
+ * VisComplete listen to scroll and click events to avoid miscalculation of VCT and will stop calculating if one of the events fired.
+ * */
+var windowItem = parent.window || window;
+var visComplete = function () {
+    windowItem['CPVisuallyComplete'] = (function () {
+        var VisComplete = /** @class */ (function () {
+            function VisComplete() {
+                var _this = this;
+                this.targetWindow = windowItem;
+                this.mutationObserver = undefined;
+                this.start = 0;
+                this.waitMs = 2000; //The time to wait after onload, before we start running our vis complete logic
+                this.maxResourceTiming = 0;
+                this.mutationObserverVal = 0;
+                this.scroll = 'scroll';
+                this.click = 'click';
+                this.maxDiffBetweenMutation = 1000;
+                this.sinceLastXHR = 500;
+                this.disconnectObserverTimeout = 5000;
+                // @ts-ignore
+                this.hasPerformance = typeof this.targetWindow.performance === 'object' &&
+                    typeof this.targetWindow.performance.getEntriesByType === 'function';
+                this.removeListeners = function () {
+                    document.removeEventListener(_this.scroll, _this.clear);
+                    document.removeEventListener(_this.click, _this.clear);
+                };
+                this.addListeners = function () {
+                    document.addEventListener(_this.scroll, _this.clear);
+                    document.addEventListener(_this.click, _this.clear);
+                };
+                this.imageListener = function (event) {
+                    var requests = _this.targetWindow.performance.getEntriesByType('resource');
+                    var request = undefined;
+                    for (var i = 0; i < requests.length; i++) {
+                        if (requests[i].name === event.target.currentSrc) {
+                            request = requests[i];
+                            break;
+                        }
+                    }
+                    if (request) {
+                        _this.maxResourceTiming = Math.max(_this.maxResourceTiming, Math.round(request.responseEnd));
+                    }
+                    event.currentTarget.removeEventListener('load', _this.imageListener);
+                };
+                this.videoListener = function (event) {
+                    _this.maxResourceTiming = Math.max(_this.maxResourceTiming, Math.round(_this.getPerformanceTime()));
+                    event.currentTarget.removeEventListener('canplay', _this.videoListener);
+                };
+                this.addListenersForDynamicContent = function (element) {
+                    var images = element.querySelectorAll('img');
+                    for (var i = 0; i < images.length; i += 1) {
+                        var image = images[i];
+                        if (_this.isVisible(image)) {
+                            image.addEventListener('load', _this.imageListener);
+                        }
+                    }
+                    var videos = element.querySelectorAll('video');
+                    for (var i = 0; i < videos.length; i += 1) {
+                        var video = videos[i];
+                        if (_this.isVisible(video)) {
+                            video.addEventListener('canplay', _this.videoListener);
+                        }
+                    }
+                };
+                this.clear = function () {
+                    clearTimeout(_this.timeout);
+                    _this.removeListeners();
+                    _this.trigger();
+                };
+                this.onLoad = function () {
+                    _this.timeout = window.setTimeout(function () {
+                        _this.removeListeners();
+                        _this.calculate();
+                    }, _this.waitMs);
+                };
+                this.getBackgroundImagesTiming = function () {
+                    var imagesToCheck = [];
+                    for (var i = 0; i < document.styleSheets.length; i += 1) {
+                        var styleSheet = document.styleSheets[i];
+                        try {
+                            for (var j = 0; j < styleSheet.cssRules.length; j += 1) {
+                                var cssRule = styleSheet.cssRules[j];
+                                var selector = cssRule.selectorText;
+                                var style = cssRule.style;
+                                if (style) {
+                                    for (var k = 0; k < style.length; k += 1) {
+                                        var propertyName = style[k];
+                                        if (propertyName === 'background-image') {
+                                            var propertyValue = style[propertyName];
+                                            var url = extractImageUrl(propertyValue);
+                                            if (url) {
+                                                var element = _this.targetWindow.document.querySelector(selector);
+                                                if (_this.isVisible(element)) {
+                                                    imagesToCheck.push(url);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        catch (e) { }
+                    }
+                    var elements = _this.targetWindow.document.querySelectorAll('[style*="background"]');
+                    for (var i = 0; i < elements.length; i++) {
+                        if (_this.isVisible(elements[i])) {
+                            var styles = _this.targetWindow.getComputedStyle(elements[i]);
+                            var backgroundImage = styles.getPropertyValue('background-image');
+                            var url = extractImageUrl(backgroundImage);
+                            if (url) {
+                                imagesToCheck.push(url);
+                            }
+                        }
+                    }
+                    for (var _i = 0, imagesToCheck_1 = imagesToCheck; _i < imagesToCheck_1.length; _i++) {
+                        var url = imagesToCheck_1[_i];
+                        var requests = _this.targetWindow.performance.getEntriesByType('resource');
+                        var request = undefined;
+                        for (var i = 0; i < requests.length; i++) {
+                            if (requests[i].name === new URL(url, _this.targetWindow.location.href).href) {
+                                request = requests[i];
+                                break;
+                            }
+                        }
+                        if (request) {
+                            _this.maxResourceTiming = Math.max(_this.maxResourceTiming, Math.round(request.responseEnd));
+                        }
+                    }
+                };
+                this.calculate = function () {
+                    if (!_this.targetWindow.performance) {
+                        _this.trigger();
+                        return;
+                    }
+                    _this.getBackgroundImagesTiming();
+                    _this.trigger();
+                };
+                this.getPerformanceTime = function () {
+                    return _this.targetWindow['performance'].now();
+                };
+                this.resetValueOnSoftNav = function () {
+                    _this.mutationObserverVal = 0;
+                    _this.maxResourceTiming = 0;
+                    _this.isSoftNav = false;
+                };
+                this.isVisible = function (node) {
+                    var rect = typeof node.getBoundingClientRect === 'function' && node.getBoundingClientRect();
+                    // if the added element is Visible in the view port
+                    var isNodeInViewport = rect &&
+                        rect.width * rect.height >= 8 &&
+                        rect.right >= 0 &&
+                        rect.bottom >= 0 &&
+                        rect.left <= _this.targetWindow.innerWidth &&
+                        rect.top <= _this.targetWindow.innerHeight &&
+                        !node.hidden &&
+                        node.type !== 'hidden';
+                    if (isNodeInViewport) {
+                        var style = window.getComputedStyle(node);
+                        return (style.display !== 'none' &&
+                            style.visibility !== 'hidden' &&
+                            style.visibility !== 'collapse' &&
+                            +style.opacity > 0);
+                    }
+                    return false;
+                };
+                this.mutationCallback = function (mutationsList) {
+                    mutationsList.forEach(function (mutation) {
+                        if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                            var addedNode = mutation.addedNodes[0];
+                            if (_this.isVisible(addedNode)) {
+                                if (addedNode.nodeName.toLowerCase() === 'img') {
+                                    addedNode.addEventListener('load', _this.imageListener);
+                                }
+                                if (addedNode.nodeName.toLowerCase() === 'video') {
+                                    addedNode.addEventListener('canplay', _this.videoListener);
+                                }
+                                var perfTime = _this.getPerformanceTime();
+                                if (_this.isSoftNav) {
+                                    _this.resetValueOnSoftNav();
+                                }
+                                var requests = _this.targetWindow.performance.getEntriesByType('resource');
+                                var lastXHR = undefined;
+                                for (var i = 0; i < requests.length; i++) {
+                                    if (requests[i].initiatorType === 'xmlhttprequest') {
+                                        lastXHR = requests[i];
+                                        break;
+                                    }
+                                }
+                                if (_this.mutationObserverVal === 0 ||
+                                    (lastXHR && perfTime - lastXHR.responseEnd < _this.sinceLastXHR) ||
+                                    perfTime - _this.mutationObserverVal <= _this.maxDiffBetweenMutation) {
+                                    _this.mutationObserverVal = Math.round(perfTime);
+                                }
+                            }
+                        }
+                        else if (mutation.type === 'attributes') {
+                            if (mutation.target.nodeName.toLowerCase() === 'img' && mutation.attributeName === 'src') {
+                                if (_this.isVisible(mutation.target)) {
+                                    mutation.target.addEventListener('load', _this.imageListener);
+                                }
+                            }
+                        }
+                    });
+                };
+                this.initMutationObserver = function () {
+                    var browserMutationObserver = _this.targetWindow['MutationObserver'] ||
+                        _this.targetWindow['WebKitMutationObserver'] ||
+                        _this.targetWindow['MozMutationObserver'];
+                    if (browserMutationObserver && _this.targetWindow['performance']) {
+                        _this.mutationObserver = new browserMutationObserver(_this.mutationCallback);
+                        _this.observe();
+                    }
+                };
+                this.trigger = function () {
+                    if (_this.callback) {
+                        var visCompTime = _this.getValue(false);
+                        _this.callback(visCompTime);
+                    }
+                };
+                this.observe = function () {
+                    _this.mutationObserver.observe(_this.targetWindow.document, {
+                        childList: true,
+                        attributes: true,
+                        characterData: true,
+                        subtree: true
+                    });
+                    setTimeout(function () {
+                        _this.mutationObserver.disconnect();
+                    }, _this.disconnectObserverTimeout);
+                };
+                this.getValue = function (isSoftNavigation) {
+                    //If isSoftNavigation is not set, look for isSoftNav value captured by CPVisuallyComplete
+                    var isSoftNav = isSoftNavigation || _this.isSoftNav;
+                    if (_this.maxResourceTiming || _this.mutationObserverVal) {
+                        var visCompTime = 0;
+                        if (_this.maxResourceTiming && _this.mutationObserverVal) {
+                            visCompTime = Math.max(_this.maxResourceTiming, _this.mutationObserverVal);
+                        }
+                        else if (_this.maxResourceTiming) {
+                            visCompTime = _this.maxResourceTiming;
+                        }
+                        else if (_this.mutationObserverVal) {
+                            visCompTime = _this.mutationObserverVal;
+                        }
+                        if (!isSoftNav) {
+                            return Math.round(Math.max(visCompTime - _this.start, _this.getFirstPaintTime()));
+                        }
+                        return Math.round(visCompTime - _this.start);
+                    }
+                    return undefined;
+                };
+                this.onComplete = function (callback) {
+                    _this.callback = callback;
+                };
+                this.reset = function () {
+                    _this.isSoftNav = true;
+                    if (_this.targetWindow['performance']) {
+                        _this.start = _this.getPerformanceTime();
+                        _this.mutationObserver.disconnect();
+                        _this.observe();
+                        _this.onLoad();
+                    }
+                };
+                this.captureSoftNavigations = function () {
+                    if (!_this.targetWindow['HashChangeEvent'] || _this.targetWindow['RProfiler']) {
+                        return;
+                    }
+                    _this.addEvent('hashchange', _this.targetWindow, _this.reset);
+                    var history = _this.targetWindow.history;
+                    if (!history) {
+                        return;
+                    }
+                    var functionStr = 'function';
+                    if (typeof history.go === functionStr) {
+                        var origGo_1 = history.go;
+                        history.go = function (delta) {
+                            _this.reset();
+                            origGo_1.call(history, delta);
+                        };
+                    }
+                    if (typeof history.back === functionStr) {
+                        var origBack_1 = history.back;
+                        history.back = function () {
+                            _this.reset();
+                            origBack_1.call(history);
+                        };
+                    }
+                    if (typeof history.forward === functionStr) {
+                        var origForward_1 = history.forward;
+                        history.forward = function () {
+                            _this.reset();
+                            origForward_1.call(history);
+                        };
+                    }
+                    if (typeof history.pushState === functionStr) {
+                        var origPush_1 = history.pushState;
+                        history.pushState = function (data, title, url) {
+                            _this.reset();
+                            origPush_1.call(history, data, title, url);
+                        };
+                    }
+                    if (typeof history.replaceState === functionStr) {
+                        var origReplace_1 = history.replaceState;
+                        history.replaceState = function (data, title, url) {
+                            _this.reset();
+                            origReplace_1.call(history, data, title, url);
+                        };
+                    }
+                };
+                this.initMutationObserver();
+                this.captureSoftNavigations();
+                this.init();
+            }
+            VisComplete.prototype.init = function () {
+                var _this = this;
+                var document = this.targetWindow.document;
+                if (document.readyState === 'complete') {
+                    this.onLoad();
+                }
+                else {
+                    this.targetWindow.addEventListener('load', this.onLoad);
+                }
+                if (document.readyState === 'interactive') {
+                    this.addListenersForDynamicContent(document);
+                }
+                else {
+                    this.targetWindow.addEventListener('DOMContentLoaded', function () {
+                        _this.addListenersForDynamicContent(document);
+                    });
+                }
+                this.removeListeners();
+                this.addListeners();
+            };
+            VisComplete.prototype.addEvent = function (type, target, func) {
+                if (this.targetWindow['attachEvent']) {
+                    target.attachEvent('on' + type, func);
+                }
+                else {
+                    target.addEventListener(type, func, false);
+                }
+            };
+            VisComplete.prototype.getFirstPaintTime = function () {
+                var paintTime = 0;
+                try {
+                    var paintTimings = this.targetWindow.performance.getEntriesByType('paint');
+                    if (paintTimings && paintTimings.length > 0) {
+                        var firstPaint = paintTimings.filter(function (x) { return x.name === 'first-paint'; });
+                        if (firstPaint && firstPaint.length > 0 && firstPaint[0].startTime) {
+                            paintTime = Math.round(firstPaint[0].startTime);
+                        }
+                        var firstContentfulPaint = paintTimings.filter(function (x) { return x.name === 'first-contentful-paint'; });
+                        if (firstContentfulPaint &&
+                            firstContentfulPaint.length > 0 &&
+                            firstContentfulPaint[0].startTime) {
+                            paintTime = Math.round(firstContentfulPaint[0].startTime);
+                        }
+                    }
+                }
+                catch (_a) { }
+                return paintTime;
+            };
+            return VisComplete;
+        }());
+        var visComplete = new VisComplete();
+        return {
+            getValue: visComplete.getValue,
+            onComplete: visComplete.onComplete,
+            reset: visComplete.reset
+        };
+    })();
+};
+/* harmony default export */ const src_visComplete = (visComplete);
+
 ;// CONCATENATED MODULE: ./src/rprofiler/rprofiler.ts
+
 
 
 
@@ -2587,7 +2982,7 @@ var RProfiler = /** @class */ (function () {
     function RProfiler() {
         var _this = this;
         // @ts-ignore
-        this.restUrl = 'localhost:44394/jp/1826/v4.0.0/s.M';
+        this.restUrl = 'portalstage.catchpoint.com/jp/1826/v4.0.0/M';
         this.startTime = new Date().getTime();
         this.eventsTimingHandler = new rprofiler_EventsTimingHandler();
         this.inputDelay = new rprofiler_InputDelayHandler();
@@ -2773,12 +3168,14 @@ window['WindowEvent'] = WindowEvent;
 if (document.readyState === 'complete') {
     config.initValues();
     main();
+    src_visComplete();
 }
 else {
     document.onreadystatechange = function () {
         if (document.readyState === 'complete') {
             config.initValues();
             main();
+            src_visComplete();
         }
     };
 }
