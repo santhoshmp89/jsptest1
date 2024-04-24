@@ -46,3 +46,21 @@ button2.addEventListener('click', function() {
 	promiseErrorFunc();	
 });
 
+function addingNELHeader() {
+	fetch({
+		url: 'https://jsonplaceholder.typicode.com/todos/1',
+		header: {
+			NEL: {"report_to":"network-errors","max_age":2592000,"success_fraction":0,"failure_fraction":1.0, "include_subdomains": true},
+			'Report-To': {"group":"network-errors","max_age":2592000,"endpoints":[{"url":"https://rqa.3genlabs.net/hawklogserver/1527/re.p"}]}
+		}
+	})
+		.then(response => response.json())
+	  .then(x => console.log(a))
+}
+
+const button3 = document.getElementById('nel-btn');
+button3.addEventListener('click', function() {
+	addingNELHeader();	
+});
+
+
