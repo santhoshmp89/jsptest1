@@ -35,7 +35,7 @@
 /************************************************************************/
 var __webpack_exports__ = {};
 /*!*************************************************!*\
-  !*** ./src/rprofiler/rprofiler.ts + 26 modules ***!
+  !*** ./src/rprofiler/rprofiler.ts + 27 modules ***!
   \*************************************************/
 // ESM COMPAT FLAG
 __webpack_require__.r(__webpack_exports__);
@@ -45,8 +45,8 @@ __webpack_require__.d(__webpack_exports__, {
   "default": () => (/* binding */ rprofiler)
 });
 
-;// CONCATENATED MODULE: ./node_modules/web-vitals/dist/web-vitals.attribution.js
-var e,t,n,r,i,a=function(){return window.performance&&performance.getEntriesByType&&performance.getEntriesByType("navigation")[0]},o=function(e){if("loading"===document.readyState)return"loading";var t=a();if(t){if(e<t.domInteractive)return"loading";if(0===t.domContentLoadedEventStart||e<t.domContentLoadedEventStart)return"dom-interactive";if(0===t.domComplete||e<t.domComplete)return"dom-content-loaded"}return"complete"},u=function(e){var t=e.nodeName;return 1===e.nodeType?t.toLowerCase():t.toUpperCase().replace(/^#/,"")},c=function(e,t){var n="";try{for(;e&&9!==e.nodeType;){var r=e,i=r.id?"#"+r.id:u(r)+(r.classList&&r.classList.value&&r.classList.value.trim()&&r.classList.value.trim().length?"."+r.classList.value.trim().replace(/\s+/g,"."):"");if(n.length+i.length>(t||100)-1)return n||i;if(n=n?i+">"+n:i,r.id)break;e=r.parentNode}}catch(e){}return n},s=-1,f=function(){return s},d=function(e){addEventListener("pageshow",(function(t){t.persisted&&(s=t.timeStamp,e(t))}),!0)},l=function(){var e=a();return e&&e.activationStart||0},m=function(e,t){var n=a(),r="navigate";f()>=0?r="back-forward-cache":n&&(document.prerendering||l()>0?r="prerender":document.wasDiscarded?r="restore":n.type&&(r=n.type.replace(/_/g,"-")));return{name:e,value:void 0===t?-1:t,rating:"good",delta:0,entries:[],id:"v3-".concat(Date.now(),"-").concat(Math.floor(8999999999999*Math.random())+1e12),navigationType:r}},v=function(e,t,n){try{if(PerformanceObserver.supportedEntryTypes.includes(e)){var r=new PerformanceObserver((function(e){Promise.resolve().then((function(){t(e.getEntries())}))}));return r.observe(Object.assign({type:e,buffered:!0},n||{})),r}}catch(e){}},p=function(e,t,n,r){var i,a;return function(o){t.value>=0&&(o||r)&&((a=t.value-(i||0))||void 0===i)&&(i=t.value,t.delta=a,t.rating=function(e,t){return e>t[1]?"poor":e>t[0]?"needs-improvement":"good"}(t.value,n),e(t))}},h=function(e){requestAnimationFrame((function(){return requestAnimationFrame((function(){return e()}))}))},g=function(e){var t=function(t){"pagehide"!==t.type&&"hidden"!==document.visibilityState||e(t)};addEventListener("visibilitychange",t,!0),addEventListener("pagehide",t,!0)},T=function(e){var t=!1;return function(n){t||(e(n),t=!0)}},y=-1,E=function(){return"hidden"!==document.visibilityState||document.prerendering?1/0:0},S=function(e){"hidden"===document.visibilityState&&y>-1&&(y="visibilitychange"===e.type?e.timeStamp:0,b())},L=function(){addEventListener("visibilitychange",S,!0),addEventListener("prerenderingchange",S,!0)},b=function(){removeEventListener("visibilitychange",S,!0),removeEventListener("prerenderingchange",S,!0)},C=function(){return y<0&&(y=E(),L(),d((function(){setTimeout((function(){y=E(),L()}),0)}))),{get firstHiddenTime(){return y}}},w=function(e){document.prerendering?addEventListener("prerenderingchange",(function(){return e()}),!0):e()},M=[1800,3e3],x=function(e,t){t=t||{},w((function(){var n,r=C(),i=m("FCP"),a=v("paint",(function(e){e.forEach((function(e){"first-contentful-paint"===e.name&&(a.disconnect(),e.startTime<r.firstHiddenTime&&(i.value=Math.max(e.startTime-l(),0),i.entries.push(e),n(!0)))}))}));a&&(n=p(e,i,M,t.reportAllChanges),d((function(r){i=m("FCP"),n=p(e,i,M,t.reportAllChanges),h((function(){i.value=performance.now()-r.timeStamp,n(!0)}))})))}))},A=[.1,.25],F=function(e,t){!function(e,t){t=t||{},x(T((function(){var n,r=m("CLS",0),i=0,a=[],o=function(e){e.forEach((function(e){if(!e.hadRecentInput){var t=a[0],n=a[a.length-1];i&&e.startTime-n.startTime<1e3&&e.startTime-t.startTime<5e3?(i+=e.value,a.push(e)):(i=e.value,a=[e])}})),i>r.value&&(r.value=i,r.entries=a,n())},u=v("layout-shift",o);u&&(n=p(e,r,A,t.reportAllChanges),g((function(){o(u.takeRecords()),n(!0)})),d((function(){i=0,r=m("CLS",0),n=p(e,r,A,t.reportAllChanges),h((function(){return n()}))})),setTimeout(n,0))})))}((function(t){!function(e){if(e.entries.length){var t=e.entries.reduce((function(e,t){return e&&e.value>t.value?e:t}));if(t&&t.sources&&t.sources.length){var n=(r=t.sources).find((function(e){return e.node&&1===e.node.nodeType}))||r[0];if(n)return void(e.attribution={largestShiftTarget:c(n.node),largestShiftTime:t.startTime,largestShiftValue:t.value,largestShiftSource:n,largestShiftEntry:t,loadState:o(t.startTime)})}}var r;e.attribution={}}(t),e(t)}),t)},I=function(e,t){x((function(t){!function(e){if(e.entries.length){var t=a(),n=e.entries[e.entries.length-1];if(t){var r=t.activationStart||0,i=Math.max(0,t.responseStart-r);return void(e.attribution={timeToFirstByte:i,firstByteToFCP:e.value-i,loadState:o(e.entries[0].startTime),navigationEntry:t,fcpEntry:n})}}e.attribution={timeToFirstByte:0,firstByteToFCP:e.value,loadState:o(f())}}(t),e(t)}),t)},P={passive:!0,capture:!0},B=new Date,D=function(r,i){e||(e=i,t=r,n=new Date,q(removeEventListener),k())},k=function(){if(t>=0&&t<n-B){var i={entryType:"first-input",name:e.type,target:e.target,cancelable:e.cancelable,startTime:e.timeStamp,processingStart:e.timeStamp+t};r.forEach((function(e){e(i)})),r=[]}},R=function(e){if(e.cancelable){var t=(e.timeStamp>1e12?new Date:performance.now())-e.timeStamp;"pointerdown"==e.type?function(e,t){var n=function(){D(e,t),i()},r=function(){i()},i=function(){removeEventListener("pointerup",n,P),removeEventListener("pointercancel",r,P)};addEventListener("pointerup",n,P),addEventListener("pointercancel",r,P)}(t,e):D(t,e)}},q=function(e){["mousedown","keydown","touchstart","pointerdown"].forEach((function(t){return e(t,R,P)}))},H=[100,300],N=function(n,i){i=i||{},w((function(){var a,o=C(),u=m("FID"),c=function(e){e.startTime<o.firstHiddenTime&&(u.value=e.processingStart-e.startTime,u.entries.push(e),a(!0))},s=function(e){e.forEach(c)},f=v("first-input",s);a=p(n,u,H,i.reportAllChanges),f&&g(T((function(){s(f.takeRecords()),f.disconnect()}))),f&&d((function(){var o;u=m("FID"),a=p(n,u,H,i.reportAllChanges),r=[],t=-1,e=null,q(addEventListener),o=c,r.push(o),k()}))}))},O=function(e,t){N((function(t){!function(e){var t=e.entries[0];e.attribution={eventTarget:c(t.target),eventType:t.name,eventTime:t.startTime,eventEntry:t,loadState:o(t.startTime)}}(t),e(t)}),t)},j=0,U=1/0,V=0,_=function(e){e.forEach((function(e){e.interactionId&&(U=Math.min(U,e.interactionId),V=Math.max(V,e.interactionId),j=V?(V-U)/7+1:0)}))},z=function(){return i?j:performance.interactionCount||0},G=function(){"interactionCount"in performance||i||(i=v("event",_,{type:"event",buffered:!0,durationThreshold:0}))},J=[200,500],K=0,Q=function(){return z()-K},W=[],X={},Y=function(e){var t=W[W.length-1],n=X[e.interactionId];if(n||W.length<10||e.duration>t.latency){if(n)n.entries.push(e),n.latency=Math.max(n.latency,e.duration);else{var r={id:e.interactionId,latency:e.duration,entries:[e]};X[r.id]=r,W.push(r)}W.sort((function(e,t){return t.latency-e.latency})),W.splice(10).forEach((function(e){delete X[e.id]}))}},Z=function(e,t){t=t||{},w((function(){var n;G();var r,i=m("INP"),a=function(e){e.forEach((function(e){(e.interactionId&&Y(e),"first-input"===e.entryType)&&(!W.some((function(t){return t.entries.some((function(t){return e.duration===t.duration&&e.startTime===t.startTime}))}))&&Y(e))}));var t,n=(t=Math.min(W.length-1,Math.floor(Q()/50)),W[t]);n&&n.latency!==i.value&&(i.value=n.latency,i.entries=n.entries,r())},o=v("event",a,{durationThreshold:null!==(n=t.durationThreshold)&&void 0!==n?n:40});r=p(e,i,J,t.reportAllChanges),o&&("PerformanceEventTiming"in window&&"interactionId"in PerformanceEventTiming.prototype&&o.observe({type:"first-input",buffered:!0}),g((function(){a(o.takeRecords()),i.value<0&&Q()>0&&(i.value=0,i.entries=[]),r(!0)})),d((function(){W=[],K=z(),i=m("INP"),r=p(e,i,J,t.reportAllChanges)})))}))},$=function(e,t){Z((function(t){!function(e){if(e.entries.length){var t=e.entries.sort((function(e,t){return t.duration-e.duration||t.processingEnd-t.processingStart-(e.processingEnd-e.processingStart)}))[0],n=e.entries.find((function(e){return e.target}));e.attribution={eventTarget:c(n&&n.target),eventType:t.name,eventTime:t.startTime,eventEntry:t,loadState:o(t.startTime)}}else e.attribution={}}(t),e(t)}),t)},ee=[2500,4e3],te={},ne=function(e,t){!function(e,t){t=t||{},w((function(){var n,r=C(),i=m("LCP"),a=function(e){var t=e[e.length-1];t&&t.startTime<r.firstHiddenTime&&(i.value=Math.max(t.startTime-l(),0),i.entries=[t],n())},o=v("largest-contentful-paint",a);if(o){n=p(e,i,ee,t.reportAllChanges);var u=T((function(){te[i.id]||(a(o.takeRecords()),o.disconnect(),te[i.id]=!0,n(!0))}));["keydown","click"].forEach((function(e){addEventListener(e,(function(){return setTimeout(u,0)}),!0)})),g(u),d((function(r){i=m("LCP"),n=p(e,i,ee,t.reportAllChanges),h((function(){i.value=performance.now()-r.timeStamp,te[i.id]=!0,n(!0)}))}))}}))}((function(t){!function(e){if(e.entries.length){var t=a();if(t){var n=t.activationStart||0,r=e.entries[e.entries.length-1],i=r.url&&performance.getEntriesByType("resource").filter((function(e){return e.name===r.url}))[0],o=Math.max(0,t.responseStart-n),u=Math.max(o,i?(i.requestStart||i.startTime)-n:0),s=Math.max(u,i?i.responseEnd-n:0),f=Math.max(s,r?r.startTime-n:0),d={element:c(r.element),timeToFirstByte:o,resourceLoadDelay:u-o,resourceLoadTime:s-u,elementRenderDelay:f-s,navigationEntry:t,lcpEntry:r};return r.url&&(d.url=r.url),i&&(d.lcpResourceEntry=i),void(e.attribution=d)}}e.attribution={timeToFirstByte:0,resourceLoadDelay:0,resourceLoadTime:0,elementRenderDelay:e.value}}(t),e(t)}),t)},re=[800,1800],ie=function e(t){document.prerendering?w((function(){return e(t)})):"complete"!==document.readyState?addEventListener("load",(function(){return e(t)}),!0):setTimeout(t,0)},ae=function(e,t){t=t||{};var n=m("TTFB"),r=p(e,n,re,t.reportAllChanges);ie((function(){var i=a();if(i){var o=i.responseStart;if(o<=0||o>performance.now())return;n.value=Math.max(o-l(),0),n.entries=[i],r(!0),d((function(){n=m("TTFB",0),(r=p(e,n,re,t.reportAllChanges))(!0)}))}}))},oe=function(e,t){ae((function(t){!function(e){if(e.entries.length){var t=e.entries[0],n=t.activationStart||0,r=Math.max(t.domainLookupStart-n,0),i=Math.max(t.connectStart-n,0),a=Math.max(t.requestStart-n,0);e.attribution={waitingTime:r,dnsTime:i-r,connectionTime:a-i,requestTime:e.value-a,navigationEntry:t}}else e.attribution={waitingTime:0,dnsTime:0,connectionTime:0,requestTime:0}}(t),e(t)}),t)};
+;// CONCATENATED MODULE: ./node_modules/web-vitals/dist/web-vitals.js
+var e,n,t,i,r,a=-1,o=function(e){addEventListener("pageshow",(function(n){n.persisted&&(a=n.timeStamp,e(n))}),!0)},c=function(){return window.performance&&performance.getEntriesByType&&performance.getEntriesByType("navigation")[0]},u=function(){var e=c();return e&&e.activationStart||0},f=function(e,n){var t=c(),i="navigate";a>=0?i="back-forward-cache":t&&(document.prerendering||u()>0?i="prerender":document.wasDiscarded?i="restore":t.type&&(i=t.type.replace(/_/g,"-")));return{name:e,value:void 0===n?-1:n,rating:"good",delta:0,entries:[],id:"v3-".concat(Date.now(),"-").concat(Math.floor(8999999999999*Math.random())+1e12),navigationType:i}},s=function(e,n,t){try{if(PerformanceObserver.supportedEntryTypes.includes(e)){var i=new PerformanceObserver((function(e){Promise.resolve().then((function(){n(e.getEntries())}))}));return i.observe(Object.assign({type:e,buffered:!0},t||{})),i}}catch(e){}},d=function(e,n,t,i){var r,a;return function(o){n.value>=0&&(o||i)&&((a=n.value-(r||0))||void 0===r)&&(r=n.value,n.delta=a,n.rating=function(e,n){return e>n[1]?"poor":e>n[0]?"needs-improvement":"good"}(n.value,t),e(n))}},l=function(e){requestAnimationFrame((function(){return requestAnimationFrame((function(){return e()}))}))},p=function(e){var n=function(n){"pagehide"!==n.type&&"hidden"!==document.visibilityState||e(n)};addEventListener("visibilitychange",n,!0),addEventListener("pagehide",n,!0)},v=function(e){var n=!1;return function(t){n||(e(t),n=!0)}},m=-1,h=function(){return"hidden"!==document.visibilityState||document.prerendering?1/0:0},g=function(e){"hidden"===document.visibilityState&&m>-1&&(m="visibilitychange"===e.type?e.timeStamp:0,T())},y=function(){addEventListener("visibilitychange",g,!0),addEventListener("prerenderingchange",g,!0)},T=function(){removeEventListener("visibilitychange",g,!0),removeEventListener("prerenderingchange",g,!0)},E=function(){return m<0&&(m=h(),y(),o((function(){setTimeout((function(){m=h(),y()}),0)}))),{get firstHiddenTime(){return m}}},C=function(e){document.prerendering?addEventListener("prerenderingchange",(function(){return e()}),!0):e()},L=[1800,3e3],w=function(e,n){n=n||{},C((function(){var t,i=E(),r=f("FCP"),a=s("paint",(function(e){e.forEach((function(e){"first-contentful-paint"===e.name&&(a.disconnect(),e.startTime<i.firstHiddenTime&&(r.value=Math.max(e.startTime-u(),0),r.entries.push(e),t(!0)))}))}));a&&(t=d(e,r,L,n.reportAllChanges),o((function(i){r=f("FCP"),t=d(e,r,L,n.reportAllChanges),l((function(){r.value=performance.now()-i.timeStamp,t(!0)}))})))}))},b=[.1,.25],S=function(e,n){n=n||{},w(v((function(){var t,i=f("CLS",0),r=0,a=[],c=function(e){e.forEach((function(e){if(!e.hadRecentInput){var n=a[0],t=a[a.length-1];r&&e.startTime-t.startTime<1e3&&e.startTime-n.startTime<5e3?(r+=e.value,a.push(e)):(r=e.value,a=[e])}})),r>i.value&&(i.value=r,i.entries=a,t())},u=s("layout-shift",c);u&&(t=d(e,i,b,n.reportAllChanges),p((function(){c(u.takeRecords()),t(!0)})),o((function(){r=0,i=f("CLS",0),t=d(e,i,b,n.reportAllChanges),l((function(){return t()}))})),setTimeout(t,0))})))},A={passive:!0,capture:!0},I=new Date,P=function(i,r){e||(e=r,n=i,t=new Date,k(removeEventListener),F())},F=function(){if(n>=0&&n<t-I){var r={entryType:"first-input",name:e.type,target:e.target,cancelable:e.cancelable,startTime:e.timeStamp,processingStart:e.timeStamp+n};i.forEach((function(e){e(r)})),i=[]}},M=function(e){if(e.cancelable){var n=(e.timeStamp>1e12?new Date:performance.now())-e.timeStamp;"pointerdown"==e.type?function(e,n){var t=function(){P(e,n),r()},i=function(){r()},r=function(){removeEventListener("pointerup",t,A),removeEventListener("pointercancel",i,A)};addEventListener("pointerup",t,A),addEventListener("pointercancel",i,A)}(n,e):P(n,e)}},k=function(e){["mousedown","keydown","touchstart","pointerdown"].forEach((function(n){return e(n,M,A)}))},D=[100,300],x=function(t,r){r=r||{},C((function(){var a,c=E(),u=f("FID"),l=function(e){e.startTime<c.firstHiddenTime&&(u.value=e.processingStart-e.startTime,u.entries.push(e),a(!0))},m=function(e){e.forEach(l)},h=s("first-input",m);a=d(t,u,D,r.reportAllChanges),h&&p(v((function(){m(h.takeRecords()),h.disconnect()}))),h&&o((function(){var o;u=f("FID"),a=d(t,u,D,r.reportAllChanges),i=[],n=-1,e=null,k(addEventListener),o=l,i.push(o),F()}))}))},B=0,R=1/0,H=0,N=function(e){e.forEach((function(e){e.interactionId&&(R=Math.min(R,e.interactionId),H=Math.max(H,e.interactionId),B=H?(H-R)/7+1:0)}))},O=function(){return r?B:performance.interactionCount||0},q=function(){"interactionCount"in performance||r||(r=s("event",N,{type:"event",buffered:!0,durationThreshold:0}))},j=[200,500],_=0,z=function(){return O()-_},G=[],J={},K=function(e){var n=G[G.length-1],t=J[e.interactionId];if(t||G.length<10||e.duration>n.latency){if(t)t.entries.push(e),t.latency=Math.max(t.latency,e.duration);else{var i={id:e.interactionId,latency:e.duration,entries:[e]};J[i.id]=i,G.push(i)}G.sort((function(e,n){return n.latency-e.latency})),G.splice(10).forEach((function(e){delete J[e.id]}))}},Q=function(e,n){n=n||{},C((function(){var t;q();var i,r=f("INP"),a=function(e){e.forEach((function(e){(e.interactionId&&K(e),"first-input"===e.entryType)&&(!G.some((function(n){return n.entries.some((function(n){return e.duration===n.duration&&e.startTime===n.startTime}))}))&&K(e))}));var n,t=(n=Math.min(G.length-1,Math.floor(z()/50)),G[n]);t&&t.latency!==r.value&&(r.value=t.latency,r.entries=t.entries,i())},c=s("event",a,{durationThreshold:null!==(t=n.durationThreshold)&&void 0!==t?t:40});i=d(e,r,j,n.reportAllChanges),c&&("PerformanceEventTiming"in window&&"interactionId"in PerformanceEventTiming.prototype&&c.observe({type:"first-input",buffered:!0}),p((function(){a(c.takeRecords()),r.value<0&&z()>0&&(r.value=0,r.entries=[]),i(!0)})),o((function(){G=[],_=O(),r=f("INP"),i=d(e,r,j,n.reportAllChanges)})))}))},U=[2500,4e3],V={},W=function(e,n){n=n||{},C((function(){var t,i=E(),r=f("LCP"),a=function(e){var n=e[e.length-1];n&&n.startTime<i.firstHiddenTime&&(r.value=Math.max(n.startTime-u(),0),r.entries=[n],t())},c=s("largest-contentful-paint",a);if(c){t=d(e,r,U,n.reportAllChanges);var m=v((function(){V[r.id]||(a(c.takeRecords()),c.disconnect(),V[r.id]=!0,t(!0))}));["keydown","click"].forEach((function(e){addEventListener(e,(function(){return setTimeout(m,0)}),!0)})),p(m),o((function(i){r=f("LCP"),t=d(e,r,U,n.reportAllChanges),l((function(){r.value=performance.now()-i.timeStamp,V[r.id]=!0,t(!0)}))}))}}))},X=[800,1800],Y=function e(n){document.prerendering?C((function(){return e(n)})):"complete"!==document.readyState?addEventListener("load",(function(){return e(n)}),!0):setTimeout(n,0)},Z=function(e,n){n=n||{};var t=f("TTFB"),i=d(e,t,X,n.reportAllChanges);Y((function(){var r=c();if(r){var a=r.responseStart;if(a<=0||a>performance.now())return;t.value=Math.max(a-u(),0),t.entries=[r],i(!0),o((function(){t=f("TTFB",0),(i=d(e,t,X,n.reportAllChanges))(!0)}))}}))};
 
 ;// CONCATENATED MODULE: ./src/types.ts
 var WindowEvent;
@@ -142,12 +142,13 @@ var AjaxRequestsHandler = /** @class */ (function () {
             typeof window.performance.getEntriesByType === 'function';
         this.captureFetchRequests = function () {
             var tempArray = [];
+            // eslint-disable-next-line @typescript-eslint/no-this-alias
             var ajaxHandler = _this;
             var onRequestError = function (error) {
                 return error;
             };
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             var onResponseError = function (error) {
-                // @ts-ignore
                 return Promise.reject(error);
             };
             if (!window.fetch) {
@@ -155,7 +156,8 @@ var AjaxRequestsHandler = /** @class */ (function () {
             }
             /*TODO: Adding ignore to resolve the error
             Need to relook on ts error. After adding latest vesion in tsconfig lib, It's unable to get the fetch type.*/
-            // @ts-ignore
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-expect-error
             window.fetch = (function (fetch) {
                 return function () {
                     var args = [];
@@ -165,10 +167,12 @@ var AjaxRequestsHandler = /** @class */ (function () {
                     var fetchRequestIndex = 0;
                     /*TODO: Adding ignore to resolve the error
                     Need to relook on ts error. After adding latest vesion in tsconfig lib, It's unable to get the promise type.*/
+                    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                     // @ts-ignore
                     var promise = Promise.resolve(args);
                     promise = promise.then(function (args) {
                         var firstArg;
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         var config = {};
                         if (args.length && args.length >= 1) {
                             firstArg = args[0];
@@ -202,7 +206,9 @@ var AjaxRequestsHandler = /** @class */ (function () {
                         }
                         return [firstArg, config];
                     }, onRequestError);
+                    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                     // @ts-ignore
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     promise = promise.then(function (args) { return fetch.apply(void 0, args); });
                     promise = promise.then(function (response) {
                         var fetchRequest = tempArray[fetchRequestIndex];
@@ -230,6 +236,7 @@ var AjaxRequestsHandler = /** @class */ (function () {
         return new Date().getTime();
     };
     AjaxRequestsHandler.prototype.processPerformanceEntries = function (fetchRequest, requestArray) {
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
         var ajaxHandler = this;
         setTimeout(function () {
             if (!ajaxHandler.hasPerformance) {
@@ -276,6 +283,7 @@ var AjaxRequestsHandler = /** @class */ (function () {
         if (ajaxHandler.hasPerformance && typeof window.performance.setResourceTimingBufferSize === 'function') {
             window.performance.setResourceTimingBufferSize(300);
         }
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
         xhr.open = function (method, url, async, user, password) {
             this.rpIndex = tempArray.length;
@@ -342,7 +350,9 @@ var AjaxRequestsHandler = /** @class */ (function () {
             if (!request) {
                 return;
             }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             if (data && !isNaN(data.length)) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 request.sendSize = data.length;
             }
             request.send = ajaxHandler.now();
@@ -359,6 +369,7 @@ var ProfilerEventManager = /** @class */ (function () {
         this.events = [];
         this.hasAttachEvent = !!window['attachEvent'];
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ProfilerEventManager.prototype.add = function (type, target, func) {
         this.events.push({ type: type, target: target, func: func });
         if (this.hasAttachEvent) {
@@ -368,6 +379,7 @@ var ProfilerEventManager = /** @class */ (function () {
             target.addEventListener(type, func, false);
         }
     };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ProfilerEventManager.prototype.remove = function (type, target, func) {
         if (this.hasAttachEvent) {
             target.detachEvent(type, func);
@@ -406,6 +418,7 @@ var EventsTimingHandler = /** @class */ (function () {
             'webkitvisibilitychange',
             'mozvisibilitychange'
         ];
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
         this.captureSoftNavigation = false;
         this.hidden = 'hidden';
@@ -422,6 +435,7 @@ var EventsTimingHandler = /** @class */ (function () {
         this.now = function () {
             return new Date().getTime();
         };
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
         this.startVisibilityCapture = function () {
             _this.initializeVisibilityProperties();
@@ -738,7 +752,7 @@ var MainConfig = /** @class */ (function () {
         sampleRate: -999, // range [0 - 100]
         waterfallSampleRate: -888, // range [0 - 100]
         postUrl: _f.protocol + 'lst01a.3genlabs.net/hawklogserver/r.p',
-        siteId: 1826,
+        siteId: 59,
         debugParameter: 'GlimpseDebug',
         debugUrl: 'localhost:44394/jp/v4.0.0/s.D',
         waterfallParameter: 'GlimpseWaterfall',
@@ -939,8 +953,6 @@ var WaterfallItem = /** @class */ (function () {
         configurable: true
     });
     WaterfallItem.prototype.translateForPost = function () {
-        // @ts-ignore
-        var round = Math.round;
         var roundedValue = main_Util.getRoundedValue;
         var obj = {
             u: this.url,
@@ -1242,6 +1254,7 @@ var PostData = /** @class */ (function (_super) {
             '\\': '\\\\',
             '&': '%26'
         };
+        // eslint-disable-next-line no-control-regex
         _this.strRegex = /["&\\\x00-\x1f\x7f-\x9f]/g;
         return _this;
     }
@@ -1276,8 +1289,11 @@ var PostData = /** @class */ (function (_super) {
                     return 'null';
                 }
                 if (value.constructor === Date) {
+                    /* empty */
                 }
+                // eslint-disable-next-line no-prototype-builtins
                 if (typeof value.length == 'number' && !value.propertyIsEnumerable('length')) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     for (var _i = 0, _a = value; _i < _a.length; _i++) {
                         var a = _a[_i];
                         arr.push(this.jsonStringify(a));
@@ -1440,12 +1456,12 @@ var PostData = /** @class */ (function (_super) {
                 if (url && url.indexOf('http') != 0) {
                     var charCount = 0;
                     var mainUrl = location.href;
-                    for (var i_1 = 0; i_1 < mainUrl.length; i_1++) {
-                        if (mainUrl[i_1] === '/') {
+                    for (var i = 0; i < mainUrl.length; i++) {
+                        if (mainUrl[i] === '/') {
                             charCount += 1;
                         }
                         if (charCount === 3) {
-                            targetUrl = mainUrl.slice(0, i_1);
+                            targetUrl = mainUrl.slice(0, i);
                             targetUrl = targetUrl + url;
                             break;
                         }
@@ -1475,6 +1491,7 @@ var PostData = /** @class */ (function (_super) {
                 if (portIndex != -1) {
                     host = host.substr(0, portIndex);
                 }
+                // eslint-disable-next-line no-prototype-builtins
                 if (!hostObj.hasOwnProperty(host)) {
                     hostObj[host] = {
                         summary: new main_HostSummary(),
@@ -1494,22 +1511,22 @@ var PostData = /** @class */ (function (_super) {
             }
         }
         var tree1 = new main_Tree();
-        for (var name in hostObj) {
+        for (var name_1 in hostObj) {
             var node = undefined;
-            for (var i = name.length - 1; i >= 0; i--) {
-                var char = name[i];
+            for (var i = name_1.length - 1; i >= 0; i--) {
+                var char = name_1[i];
                 node = tree1.add(node, char);
             }
-            node.data = hostObj[name].summary.translateForPost();
+            node.data = hostObj[name_1].summary.translateForPost();
         }
         var tree2 = new main_Tree();
-        for (var name in hostObj) {
+        for (var name_2 in hostObj) {
             var node = undefined;
-            for (var i = name.length - 1; i >= 0; i--) {
-                var char = name[i];
+            for (var i = name_2.length - 1; i >= 0; i--) {
+                var char = name_2[i];
                 node = tree2.add(node, char);
             }
-            node.data = hostObj[name].waterfall.translateForPost();
+            node.data = hostObj[name_2].waterfall.translateForPost();
         }
         var container = {
             summary: tree1.toObject(),
@@ -1523,6 +1540,7 @@ var PostData = /** @class */ (function (_super) {
         }
         // Returns the host with subdomain from the url
         var getHostNameWithSubdomain = function (url) {
+            // eslint-disable-next-line no-useless-escape
             var regex = /^(?:https?:\/\/)?(?:[^@\/\n]+@)?(?:www\.)?([^:\/?\n]+)/;
             var output = regex.exec(url);
             if (output !== null) {
@@ -1531,6 +1549,7 @@ var PostData = /** @class */ (function (_super) {
         };
         // Returns the host without subdomain from the url
         var getHostNameWithoutSubdomain = function (url) {
+            // eslint-disable-next-line no-useless-escape
             var regex = /([a-z\-0-9]{2,63})\.([a-z\.]{2,5})$/;
             var urlParts = regex.exec(url);
             return urlParts && urlParts[0];
@@ -1848,6 +1867,7 @@ var PerformanceObserver_PerformanceObserver = /** @class */ (function () {
                 return domContentLoad;
             }
         };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         this.observeLongTask = function (entries) {
             for (var i = 0; i < entries.length; i++) {
                 var currEntry = entries[i];
@@ -1861,6 +1881,7 @@ var PerformanceObserver_PerformanceObserver = /** @class */ (function () {
                 }
             }
         };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         this.setLongTaskTime = function (entry) {
             var newLongTaskTime = Math.round(entry.startTime + entry.duration);
             _this.longTaskEndTime = newLongTaskTime;
@@ -1879,10 +1900,11 @@ var PerformanceObserver_PerformanceObserver = /** @class */ (function () {
             this.observe(['longtask'], this.observeLongTask);
         }
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     PerformanceObserver.prototype.observe = function (entryTypes, callBack) {
         if (this.performanceObserverApi) {
-            // @ts-ignore
-            this.performanceObserver = new this.performanceObserverApi(function (list, obj) {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            this.performanceObserver = new this.performanceObserverApi(function (list, _obj) {
                 var entries = list.getEntries();
                 callBack(entries);
             });
@@ -2082,6 +2104,7 @@ var DataProvider = /** @class */ (function () {
             }
             if (typeof history.pushState === functionStr) {
                 var origPush_1 = history.pushState;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 history.pushState = function (data, title, url) {
                     _this.onSoftNavigation();
                     origPush_1.call(history, data, title, url);
@@ -2089,14 +2112,15 @@ var DataProvider = /** @class */ (function () {
             }
             if (typeof history.replaceState === functionStr) {
                 var origReplace_1 = history.replaceState;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 history.replaceState = function (data, title, url) {
                     _this.onSoftNavigation();
                     origReplace_1.call(history, data, title, url);
                 };
             }
         };
-        // @ts-ignore
-        this.onViewVisuallyComplete = function (val) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        this.onViewVisuallyComplete = function (_val) {
             if (_this.didSoftNavigation) {
                 _this.doPost(PostType.OnLoad, true);
             }
@@ -2116,7 +2140,7 @@ var DataProvider = /** @class */ (function () {
             }
             _this.doPost(PostType.OnBeforeUnload, _this.didSoftNavigation);
             _this.visitor.store.viewCount++;
-            if (!!vc) {
+            if (vc) {
                 config.pageWindow.setTimeout(function () {
                     vc.reset();
                 }, 0);
@@ -2242,7 +2266,6 @@ var DataProvider = /** @class */ (function () {
         }
         if (config.profiler && config.profiler.getCPWebVitals) {
             var cpWebVitals = config.profiler.getCPWebVitals();
-            console.log(cpWebVitals);
             if (cpWebVitals.cls) {
                 postObj.cls = cpWebVitals.cls;
             }
@@ -2251,7 +2274,6 @@ var DataProvider = /** @class */ (function () {
             }
             if (cpWebVitals.inp) {
                 postObj.inp = cpWebVitals.inp;
-                postObj.inpDe = cpWebVitals.inpDe;
             }
         }
         if (config.profiler.data.jsCount > 0) {
@@ -2351,7 +2373,7 @@ var DataProvider = /** @class */ (function () {
                 break; // arriving here means it's a nonstandard mark that we don't care about
         }
     };
-    // @ts-ignore
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
     DataProvider.prototype.getPaintTimings = function (paintTimings, type) {
         var paintType = paintTimings.filter(function (x) { return x.name === type; });
         if (paintType && paintType.length > 0 && paintType[0].startTime) {
@@ -2359,7 +2381,7 @@ var DataProvider = /** @class */ (function () {
         }
     };
     DataProvider.prototype.setClearResources = function () {
-        if (!!config.pageWindow['__cpPreventResourceClear']) {
+        if (config.pageWindow['__cpPreventResourceClear']) {
             config.config.clearResources = config.pageWindow['__cpPreventResourceClear'] === false;
         }
     };
@@ -2367,10 +2389,10 @@ var DataProvider = /** @class */ (function () {
         var insight = config.profiler.info;
         for (var name_1 in insight) {
             switch (name_1) {
-                case 'appError':
+                case 'appError': {
                     var n = insight[name_1];
                     if (n && typeof n == 'object') {
-                        var num;
+                        var num = void 0;
                         for (var key in n) {
                             num = Number(key);
                             if (isNaN(num)) {
@@ -2387,12 +2409,13 @@ var DataProvider = /** @class */ (function () {
                         }
                     }
                     break;
-                case 'conversion':
+                }
+                case 'conversion': {
                     var n = insight[name_1];
                     postObj.isConversion = true;
                     if (n) {
                         if (typeof n == 'object') {
-                            var num;
+                            var num = void 0;
                             for (var key in n) {
                                 num = Number(key);
                                 if (isNaN(num)) {
@@ -2407,30 +2430,35 @@ var DataProvider = /** @class */ (function () {
                         }
                     }
                     break;
-                case 'indicator':
+                }
+                case 'indicator': {
                     var ind = this.buildInsight(insight[name_1], 0);
                     if (ind[0]) {
                         postObj.addIndicator(ind[1]);
                     }
                     break;
-                case 'tracepoint':
+                }
+                case 'tracepoint': {
                     var tra = this.buildInsight(insight[name_1], '');
                     if (tra[0]) {
                         postObj.addTracepoint(tra[1]);
                     }
                     break;
-                case 'pageGroup':
+                }
+                case 'pageGroup': {
                     var n = insight[name_1];
                     if (n !== undefined && typeof n == 'string') {
                         postObj.pageGroup = n;
                     }
                     break;
-                case 'variation':
+                }
+                case 'variation': {
                     var n = insight[name_1];
                     if (n !== undefined && typeof n == 'string') {
                         postObj.variation = n;
                     }
                     break;
+                }
             }
         }
     };
@@ -2460,14 +2488,24 @@ var DataProvider = /** @class */ (function () {
         }
         else {
             var request = new XMLHttpRequest();
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             if (window.XDomainRequest) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 request = new window.XDomainRequest();
                 //Set all the fields so that the request can be made succesfully
                 request.timeout = 0;
-                request.onload = function () { };
-                request.onerror = function () { };
-                request.ontimeout = function () { };
-                request.onprogress = function () { };
+                request.onload = function () {
+                    // do nothing
+                };
+                request.onerror = function () {
+                    // do nothing
+                };
+                request.ontimeout = function () {
+                    // do nothing
+                };
+                request.onprogress = function () {
+                    // do nothing
+                };
             }
             request.open('POST', this.postUrl, false);
             request.setRequestHeader
@@ -2521,7 +2559,7 @@ var __generator = (undefined && undefined.__generator) || function (thisArg, bod
 
 
 var mainScript = function () { return __awaiter(void 0, void 0, void 0, function () {
-    var getAppDetails, appDetails, error_1, provider;
+    var getAppDetails, appDetails, error_1;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -2541,7 +2579,7 @@ var mainScript = function () { return __awaiter(void 0, void 0, void 0, function
                     var response, data;
                     return __generator(this, function (_a) {
                         switch (_a.label) {
-                            case 0: return [4 /*yield*/, fetch('https://localhost:44394/jp/1826/v4.0.0/s.AC')];
+                            case 0: return [4 /*yield*/, fetch('https://localhost:44394/jp/59/v4.0.0/s.AC')];
                             case 1:
                                 response = _a.sent();
                                 return [4 /*yield*/, response.json()];
@@ -2568,7 +2606,7 @@ var mainScript = function () { return __awaiter(void 0, void 0, void 0, function
                 console.error('CP RUM Error', error_1);
                 return [3 /*break*/, 4];
             case 4:
-                provider = new main_DataProvider();
+                new main_DataProvider();
                 return [2 /*return*/];
         }
     });
@@ -2614,6 +2652,7 @@ var visComplete = function () {
                 this.maxDiffBetweenMutation = 1000;
                 this.sinceLastXHR = 500;
                 this.disconnectObserverTimeout = 5000;
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 // @ts-ignore
                 this.hasPerformance = typeof this.targetWindow.performance === 'object' &&
                     typeof this.targetWindow.performance.getEntriesByType === 'function';
@@ -2695,6 +2734,7 @@ var visComplete = function () {
                                     }
                                 }
                             }
+                            // eslint-disable-next-line no-empty
                         }
                         catch (e) { }
                     }
@@ -2763,6 +2803,7 @@ var visComplete = function () {
                 this.mutationCallback = function (mutationsList) {
                     mutationsList.forEach(function (mutation) {
                         if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             var addedNode = mutation.addedNodes[0];
                             if (_this.isVisible(addedNode)) {
                                 if (addedNode.nodeName.toLowerCase() === 'img') {
@@ -2891,6 +2932,7 @@ var visComplete = function () {
                     }
                     if (typeof history.pushState === functionStr) {
                         var origPush_1 = history.pushState;
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         history.pushState = function (data, title, url) {
                             _this.reset();
                             origPush_1.call(history, data, title, url);
@@ -2898,6 +2940,7 @@ var visComplete = function () {
                     }
                     if (typeof history.replaceState === functionStr) {
                         var origReplace_1 = history.replaceState;
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         history.replaceState = function (data, title, url) {
                             _this.reset();
                             origReplace_1.call(history, data, title, url);
@@ -2928,6 +2971,7 @@ var visComplete = function () {
                 this.removeListeners();
                 this.addListeners();
             };
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             VisComplete.prototype.addEvent = function (type, target, func) {
                 if (this.targetWindow['attachEvent']) {
                     target.attachEvent('on' + type, func);
@@ -2953,7 +2997,9 @@ var visComplete = function () {
                         }
                     }
                 }
-                catch (_a) { }
+                catch (_a) {
+                    // do nothing
+                }
                 return paintTime;
             };
             return VisComplete;
@@ -2968,18 +3014,34 @@ var visComplete = function () {
 };
 /* harmony default export */ const src_visComplete = (visComplete);
 
-;// CONCATENATED MODULE: ./src/rprofiler/rprofiler.ts
-var rprofiler_assign = (undefined && undefined.__assign) || function () {
-    rprofiler_assign = Object.assign || function(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-            s = arguments[i];
-            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-                t[p] = s[p];
-        }
-        return t;
+;// CONCATENATED MODULE: ./src/frustrationMetrics/RageClick.ts
+var RageClick = /** @class */ (function () {
+    function RageClick() {
+        this.clickCount = 0;
+        this.clickTimeout = null;
+        this.rageLimit = 3;
+        this.timeoutDuration = 1000; // milliseconds
+    }
+    RageClick.prototype.startListening = function () {
+        window.addEventListener('click', this.handleClick.bind(this));
     };
-    return rprofiler_assign.apply(this, arguments);
-};
+    RageClick.prototype.handleClick = function () {
+        var _this = this;
+        this.clickCount++;
+        clearTimeout(this.clickTimeout);
+        this.clickTimeout = setTimeout(function () {
+            if (_this.clickCount >= _this.rageLimit) {
+                console.log('Rage clicking detected');
+            }
+            _this.clickCount = 0;
+        }, this.timeoutDuration);
+    };
+    return RageClick;
+}());
+var rageClick = new RageClick();
+
+;// CONCATENATED MODULE: ./src/rprofiler/rprofiler.ts
+
 
 
 
@@ -2993,8 +3055,9 @@ var rprofiler_assign = (undefined && undefined.__assign) || function () {
 var RProfiler = /** @class */ (function () {
     function RProfiler() {
         var _this = this;
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        this.restUrl = 'localhost:44394/jp/1826/v4.0.0/s.M';
+        this.restUrl = 'localhost:44394/jp/59/v4.0.0/s.M';
         this.startTime = new Date().getTime();
         this.eventsTimingHandler = new rprofiler_EventsTimingHandler();
         this.inputDelay = new rprofiler_InputDelayHandler();
@@ -3024,19 +3087,9 @@ var RProfiler = /** @class */ (function () {
         };
         // Value being used instead delta as metricValue, Delta provide single value and value is for overall value.
         this.setINP = function (_a) {
-            var metricName = _a.name, metricValue = _a.value, debugInfo = _a.attribution;
-            var eventParams = {
-                t: debugInfo.eventTarget,
-                eT: debugInfo.eventType,
-                lS: debugInfo.loadState,
-                eti: debugInfo.eventTime,
-                ety: debugInfo.eventEntry
-            };
+            var metricName = _a.name, metricValue = _a.value;
             var INP = metricName === 'INP' ? metricValue : undefined;
             _this.inp = INP;
-            _this.inpDe = rprofiler_assign({}, eventParams);
-            console.log(INP);
-            console.log(JSON.stringify(eventParams));
         };
         this.recordPageLoad = function () {
             _this.data.loadTime = new Date().getTime();
@@ -3100,22 +3153,23 @@ var RProfiler = /** @class */ (function () {
             return _this.inputDelay;
         };
         this.getCPWebVitals = function () {
-            F(_this.setCLS);
-            ne(_this.setLCP);
-            $(_this.setINP);
+            S(_this.setCLS);
+            W(_this.setLCP);
+            Q(_this.setINP);
             return {
                 cls: _this.cls,
                 lcp: _this.lcp,
-                inp: _this.inp,
-                inpDe: _this.inpDe
+                inp: _this.inp
             };
         };
         this.eventManager.add(WindowEvent.Load, window, this.recordPageLoad);
         var errorFunc = this.addError;
         this.ajaxHandler = new rprofiler_AjaxRequestsHandler();
-        F(this.setCLS);
-        ne(this.setLCP, { reportAllChanges: true });
-        $(this.setINP, { reportAllChanges: true });
+        S(this.setCLS);
+        W(this.setLCP, { reportAllChanges: true });
+        Q(this.setINP, { reportAllChanges: true });
+        // Frustration event
+        rageClick.startListening();
         function recordJsError(e) {
             var ev = e.target || e.srcElement;
             if (ev.nodeType == 3) {
@@ -3128,11 +3182,11 @@ var RProfiler = /** @class */ (function () {
             this.eventManager.add(WindowEvent.Error, document, recordJsError);
         }
         else if ('onerror' in window) {
-            var origOnError = window.onerror;
+            var origOnError_1 = window.onerror;
             window.onerror = function (msg, url, lineNum) {
                 errorFunc(msg, url !== null && url !== void 0 ? url : '', lineNum !== null && lineNum !== void 0 ? lineNum : 0);
-                if (!!origOnError) {
-                    return origOnError(msg, url, lineNum);
+                if (!!origOnError_1) {
+                    return origOnError_1(msg, url, lineNum);
                 }
                 return false;
             };
@@ -3153,6 +3207,7 @@ var RProfiler = /** @class */ (function () {
             this.restUrl = window['__cpCdnPath'].trim();
         }
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     RProfiler.prototype.isNullOrEmpty = function (val) {
         if (val === undefined || val === null) {
             return true;
@@ -3168,13 +3223,16 @@ var RProfiler = /** @class */ (function () {
             if (typeof w.CustomEvent === 'function') {
                 return false;
             }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             function CustomEvent(event, params) {
                 params = params || { bubbles: false, cancelable: false, detail: undefined };
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 var evt = document.createEvent('CustomEvent');
                 evt.initCustomEvent(event, params.bubbles, params.cancelable, params.detail);
                 return evt;
             }
             CustomEvent.prototype = Event.prototype;
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore
             w.CustomEvent = CustomEvent;
         })(window); //for the browsers don't support CustomEvent
