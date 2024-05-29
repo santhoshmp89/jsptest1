@@ -1386,6 +1386,7 @@ var PostData = /** @class */ (function (_super) {
                 obj['cls'] = this.cls;
                 obj['lcp'] = this.lcp;
                 obj['inp'] = this.inp;
+                obj['frc'] = this.frc;
                 if (this.secureConnect) {
                     obj['sc'] = this.secureConnect;
                 }
@@ -2256,6 +2257,7 @@ var DataProvider = /** @class */ (function () {
         return postObj;
     };
     DataProvider.prototype.createDiffPostObject = function (ev, isSoftNavigation) {
+        var _a;
         var postObj = this.createBasePostObj(ev, false, isSoftNavigation);
         this.updateResources(ev, postObj);
         this.updateEngagementMetrics(postObj, isSoftNavigation);
@@ -2264,7 +2266,7 @@ var DataProvider = /** @class */ (function () {
         if (visComplete) {
             postObj.visComplete = visComplete;
         }
-        if (config.profiler && config.profiler.getCPWebVitals) {
+        if ((_a = config === null || config === void 0 ? void 0 : config.profiler) === null || _a === void 0 ? void 0 : _a.getCPWebVitals) {
             var cpWebVitals = config.profiler.getCPWebVitals();
             if (cpWebVitals.cls) {
                 postObj.cls = cpWebVitals.cls;
@@ -2281,11 +2283,20 @@ var DataProvider = /** @class */ (function () {
             postObj.jsErrors = config.profiler.data.jsErrors;
             config.profiler.clearErrors();
         }
-        if (config.profiler && config.profiler.getAjaxRequests) {
+        if (config.profiler.getAjaxRequests) {
             var ajaxRequests = config.profiler.getAjaxRequests();
             if (ajaxRequests) {
                 postObj.ajaxRequests = ajaxRequests.slice();
                 config.profiler.clearAjaxRequests();
+            }
+        }
+        if (config === null || config === void 0 ? void 0 : config.profiler.getgetFrustrationMetrics) {
+            var cpFrustrationMetrics = config.profiler.getgetFrustrationMetrics();
+            if (cpFrustrationMetrics) {
+                postObj.frc = cpFrustrationMetrics.frc;
+                postObj.fec = cpFrustrationMetrics.fec;
+                postObj.fdc = cpFrustrationMetrics.fdc;
+                postObj.ftc = cpFrustrationMetrics.ftc;
             }
         }
         return postObj;
@@ -3021,17 +3032,26 @@ var RageClick = /** @class */ (function () {
         this.clickTimeout = null;
         this.rageLimit = 3;
         this.timeoutDuration = 1000; // milliseconds
+        this.rage = false;
     }
     RageClick.prototype.startListening = function () {
         window.addEventListener('click', this.handleClick.bind(this));
     };
-    RageClick.prototype.handleClick = function () {
+    RageClick.prototype.stopListening = function () {
+        window.removeEventListener('click', this.handleClick.bind(this));
+    };
+    RageClick.prototype.getRageValue = function () {
+        return this.rage;
+    };
+    RageClick.prototype.handleClick = function (event) {
         var _this = this;
+        console.log(event);
         this.clickCount++;
         clearTimeout(this.clickTimeout);
         this.clickTimeout = setTimeout(function () {
             if (_this.clickCount >= _this.rageLimit) {
                 console.log('Rage clicking detected');
+                _this.rage = true;
             }
             _this.clickCount = 0;
         }, this.timeoutDuration);
@@ -3160,6 +3180,14 @@ var RProfiler = /** @class */ (function () {
                 cls: _this.cls,
                 lcp: _this.lcp,
                 inp: _this.inp
+            };
+        };
+        this.getgetFrustrationMetrics = function () {
+            return {
+                fec: false,
+                frc: false,
+                fdc: false,
+                ftc: false
             };
         };
         this.eventManager.add(WindowEvent.Load, window, this.recordPageLoad);
