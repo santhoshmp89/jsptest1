@@ -35,7 +35,7 @@
 /************************************************************************/
 var __webpack_exports__ = {};
 /*!*************************************************!*\
-  !*** ./src/rprofiler/rprofiler.ts + 27 modules ***!
+  !*** ./src/rprofiler/rprofiler.ts + 28 modules ***!
   \*************************************************/
 // ESM COMPAT FLAG
 __webpack_require__.r(__webpack_exports__);
@@ -752,7 +752,7 @@ var MainConfig = /** @class */ (function () {
         sampleRate: -999, // range [0 - 100]
         waterfallSampleRate: -888, // range [0 - 100]
         postUrl: _f.protocol + 'lst01a.3genlabs.net/hawklogserver/r.p',
-        siteId: 59,
+        siteId: 1820,
         debugParameter: 'GlimpseDebug',
         debugUrl: 'localhost:44394/jp/v4.0.0/s.D',
         waterfallParameter: 'GlimpseWaterfall',
@@ -2295,8 +2295,8 @@ var DataProvider = /** @class */ (function () {
                 config.profiler.clearAjaxRequests();
             }
         }
-        if (config === null || config === void 0 ? void 0 : config.profiler.getgetFrustrationMetrics) {
-            var cpFrustrationMetrics = config.profiler.getgetFrustrationMetrics();
+        if (config === null || config === void 0 ? void 0 : config.profiler.getFrustrationMetrics) {
+            var cpFrustrationMetrics = config.profiler.getFrustrationMetrics();
             if (cpFrustrationMetrics) {
                 postObj.frc = cpFrustrationMetrics.frc;
                 postObj.fec = cpFrustrationMetrics.fec;
@@ -2594,7 +2594,7 @@ var mainScript = function () { return __awaiter(void 0, void 0, void 0, function
                     var response, data;
                     return __generator(this, function (_a) {
                         switch (_a.label) {
-                            case 0: return [4 /*yield*/, fetch('https://localhost:44394/jp/59/v4.0.0/s.AC')];
+                            case 0: return [4 /*yield*/, fetch('https://localhost:44394/jp/1820/v4.0.0/s.AC')];
                             case 1:
                                 response = _a.sent();
                                 return [4 /*yield*/, response.json()];
@@ -3039,22 +3039,21 @@ var RageClick = /** @class */ (function () {
         this.rage = false;
     }
     RageClick.prototype.startListening = function () {
-        window.addEventListener('click', this.handleClick.bind(this));
+        window.addEventListener('click', this.clicklistener.bind(this));
     };
     RageClick.prototype.stopListening = function () {
-        window.removeEventListener('click', this.handleClick.bind(this));
+        window.removeEventListener('click', this.clicklistener.bind(this));
     };
     RageClick.prototype.getRageValue = function () {
         return this.rage;
     };
-    RageClick.prototype.handleClick = function (event) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    RageClick.prototype.clicklistener = function (_event) {
         var _this = this;
-        console.log(event);
         this.clickCount++;
         clearTimeout(this.clickTimeout);
         this.clickTimeout = setTimeout(function () {
             if (_this.clickCount >= _this.rageLimit) {
-                console.log('Rage clicking detected');
                 _this.rage = true;
             }
             _this.clickCount = 0;
@@ -3064,7 +3063,37 @@ var RageClick = /** @class */ (function () {
 }());
 var rageClick = new RageClick();
 
+;// CONCATENATED MODULE: ./src/frustrationMetrics/ErrorClick.ts
+var ErrorClick = /** @class */ (function () {
+    function ErrorClick() {
+        this.error = '';
+        this.errorMetric = false;
+    }
+    ErrorClick.prototype.startListening = function () {
+        window.addEventListener('click', this.clicklistener.bind(this));
+    };
+    ErrorClick.prototype.stopListening = function () {
+        window.removeEventListener('click', this.clicklistener.bind(this));
+    };
+    ErrorClick.prototype.getErrorValue = function () {
+        return this.errorMetric;
+    };
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    ErrorClick.prototype.clicklistener = function (_event) {
+        var _this = this;
+        setTimeout(function () {
+            if (_this.error) {
+                _this.errorMetric = true;
+            }
+            _this.errorMetric = false;
+        }, 0);
+    };
+    return ErrorClick;
+}());
+var errorClick = new ErrorClick();
+
 ;// CONCATENATED MODULE: ./src/rprofiler/rprofiler.ts
+
 
 
 
@@ -3081,7 +3110,7 @@ var RProfiler = /** @class */ (function () {
         var _this = this;
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        this.restUrl = 'localhost:44394/jp/59/v4.0.0/s.M';
+        this.restUrl = 'localhost:44394/jp/1820/v4.0.0/s.M';
         this.startTime = new Date().getTime();
         this.eventsTimingHandler = new rprofiler_EventsTimingHandler();
         this.inputDelay = new rprofiler_InputDelayHandler();
@@ -3186,10 +3215,10 @@ var RProfiler = /** @class */ (function () {
                 inp: _this.inp
             };
         };
-        this.getgetFrustrationMetrics = function () {
+        this.getFrustrationMetrics = function () {
             return {
-                fec: false,
-                frc: false,
+                frc: rageClick.getRageValue(),
+                fec: errorClick.getErrorValue(),
                 fdc: false,
             };
         };
@@ -3201,6 +3230,7 @@ var RProfiler = /** @class */ (function () {
         Q(this.setINP, { reportAllChanges: true });
         // Frustration event
         rageClick.startListening();
+        errorClick.startListening();
         function recordJsError(e) {
             var ev = e.target || e.srcElement;
             if (ev.nodeType == 3) {
