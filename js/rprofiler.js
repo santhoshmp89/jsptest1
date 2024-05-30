@@ -35,7 +35,7 @@
 /************************************************************************/
 var __webpack_exports__ = {};
 /*!*************************************************!*\
-  !*** ./src/rprofiler/rprofiler.ts + 26 modules ***!
+  !*** ./src/rprofiler/rprofiler.ts + 29 modules ***!
   \*************************************************/
 // ESM COMPAT FLAG
 __webpack_require__.r(__webpack_exports__);
@@ -752,9 +752,9 @@ var MainConfig = /** @class */ (function () {
         sampleRate: -999, // range [0 - 100]
         waterfallSampleRate: -888, // range [0 - 100]
         postUrl: _f.protocol + 'lst01a.3genlabs.net/hawklogserver/r.p',
-        siteId: 1826,
+        siteId: 59,
         debugParameter: 'GlimpseDebug',
-        debugUrl: 'portalstage.catchpoint.com/jp/v4.0.0/D',
+        debugUrl: 'localhost:44394/jp/v4.0.0/s.D',
         waterfallParameter: 'GlimpseWaterfall',
         sendOnLoad: false, // default is send onunload
         clearResources: true, // clear performance entries when we send data to core. using performance.clearResourceTimings()
@@ -1386,6 +1386,9 @@ var PostData = /** @class */ (function (_super) {
                 obj['cls'] = this.cls;
                 obj['lcp'] = this.lcp;
                 obj['inp'] = this.inp;
+                obj['frc'] = this.frc;
+                obj['fec'] = this.fec;
+                obj['fdc'] = this.fdc;
                 if (this.secureConnect) {
                     obj['sc'] = this.secureConnect;
                 }
@@ -1412,6 +1415,9 @@ var PostData = /** @class */ (function (_super) {
             obj['fid'] = this.firstInputDelay;
             obj['vct'] = this.visComplete;
             obj['fid'] = this.firstInputDelay;
+            obj['frc'] = this.frc;
+            obj['fec'] = this.fec;
+            obj['fdc'] = this.fdc;
             if (!isSoftNavigation) {
                 obj['fp'] = this.firstPaint;
                 obj['fcp'] = this.firstContentPaint;
@@ -2256,6 +2262,7 @@ var DataProvider = /** @class */ (function () {
         return postObj;
     };
     DataProvider.prototype.createDiffPostObject = function (ev, isSoftNavigation) {
+        var _a;
         var postObj = this.createBasePostObj(ev, false, isSoftNavigation);
         this.updateResources(ev, postObj);
         this.updateEngagementMetrics(postObj, isSoftNavigation);
@@ -2264,7 +2271,7 @@ var DataProvider = /** @class */ (function () {
         if (visComplete) {
             postObj.visComplete = visComplete;
         }
-        if (config.profiler && config.profiler.getCPWebVitals) {
+        if ((_a = config === null || config === void 0 ? void 0 : config.profiler) === null || _a === void 0 ? void 0 : _a.getCPWebVitals) {
             var cpWebVitals = config.profiler.getCPWebVitals();
             if (cpWebVitals.cls) {
                 postObj.cls = cpWebVitals.cls;
@@ -2281,11 +2288,19 @@ var DataProvider = /** @class */ (function () {
             postObj.jsErrors = config.profiler.data.jsErrors;
             config.profiler.clearErrors();
         }
-        if (config.profiler && config.profiler.getAjaxRequests) {
+        if (config.profiler.getAjaxRequests) {
             var ajaxRequests = config.profiler.getAjaxRequests();
             if (ajaxRequests) {
                 postObj.ajaxRequests = ajaxRequests.slice();
                 config.profiler.clearAjaxRequests();
+            }
+        }
+        if (config === null || config === void 0 ? void 0 : config.profiler.getFrustrationMetrics) {
+            var cpFrustrationMetrics = config.profiler.getFrustrationMetrics();
+            if (cpFrustrationMetrics) {
+                postObj.frc = cpFrustrationMetrics.frc;
+                postObj.fec = cpFrustrationMetrics.fec;
+                postObj.fdc = cpFrustrationMetrics.fdc;
             }
         }
         return postObj;
@@ -2579,7 +2594,7 @@ var mainScript = function () { return __awaiter(void 0, void 0, void 0, function
                     var response, data;
                     return __generator(this, function (_a) {
                         switch (_a.label) {
-                            case 0: return [4 /*yield*/, fetch('https://portalstage.catchpoint.com/jp/1826/v4.0.0/AC')];
+                            case 0: return [4 /*yield*/, fetch('https://localhost:44394/jp/59/v4.0.0/s.AC')];
                             case 1:
                                 response = _a.sent();
                                 return [4 /*yield*/, response.json()];
@@ -2623,6 +2638,11 @@ var extractImageUrl = function (backgroundImage) {
         }
     }
     return null;
+};
+var getSelectorFromTarget = function (target) {
+    var className = target.className !== '' ? ".".concat(target.className) : '';
+    var targetId = target.id !== '' ? "#".concat(target.id) : '';
+    return [target.nodeName, className, targetId].join(' ');
 };
 
 ;// CONCATENATED MODULE: ./src/visComplete.ts
@@ -3014,7 +3034,111 @@ var visComplete = function () {
 };
 /* harmony default export */ const src_visComplete = (visComplete);
 
+;// CONCATENATED MODULE: ./src/frustrationMetrics/RageClick.ts
+var RageClick = /** @class */ (function () {
+    function RageClick() {
+        this.clickCount = 0;
+        this.clickTimeout = null;
+        this.rageLimit = 3;
+        this.timeoutDuration = 1000; // milliseconds
+        this.hasRageClick = false;
+    }
+    RageClick.prototype.startListening = function () {
+        window.addEventListener('click', this.clicklistener.bind(this));
+    };
+    RageClick.prototype.stopListening = function () {
+        clearTimeout(this.clickTimeout);
+        window.removeEventListener('click', this.clicklistener.bind(this));
+    };
+    RageClick.prototype.getRageClick = function () {
+        return this.hasRageClick;
+    };
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    RageClick.prototype.clicklistener = function (_event) {
+        var _this = this;
+        this.clickCount++;
+        clearTimeout(this.clickTimeout);
+        this.clickTimeout = setTimeout(function () {
+            if (_this.clickCount >= _this.rageLimit) {
+                _this.hasRageClick = true;
+            }
+            _this.clickCount = 0;
+        }, this.timeoutDuration);
+    };
+    return RageClick;
+}());
+var rageClick = new RageClick();
+
+;// CONCATENATED MODULE: ./src/frustrationMetrics/ErrorClick.ts
+var ErrorClick = /** @class */ (function () {
+    function ErrorClick() {
+        var _this = this;
+        this.error = '';
+        this.hasErrorClick = false;
+        window.onerror = function (msg) {
+            _this.error = msg;
+        };
+    }
+    ErrorClick.prototype.startListening = function () {
+        window.addEventListener('click', this.clicklistener.bind(this));
+    };
+    ErrorClick.prototype.stopListening = function () {
+        window.removeEventListener('click', this.clicklistener.bind(this));
+    };
+    ErrorClick.prototype.getErrorClick = function () {
+        return this.hasErrorClick;
+    };
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    ErrorClick.prototype.clicklistener = function (_event) {
+        var _this = this;
+        setTimeout(function () {
+            if (_this.error) {
+                _this.hasErrorClick = true;
+            }
+        }, 0);
+    };
+    return ErrorClick;
+}());
+var errorClick = new ErrorClick();
+
+;// CONCATENATED MODULE: ./src/frustrationMetrics/DeadClick.ts
+
+var DeadClick = /** @class */ (function () {
+    function DeadClick() {
+        this.clickCounts = {};
+        this.deadClickLimit = 3;
+        this.hasDeadClick = false;
+        this.timeoutDuration = 1000; // milliseconds
+    }
+    DeadClick.prototype.getDeadClick = function () {
+        return this.hasDeadClick;
+    };
+    DeadClick.prototype.clickListener = function (event) {
+        var _this = this;
+        this.clickCountClear = setInterval(function () {
+            _this.clickCounts = {};
+        }, this.timeoutDuration);
+        var selector = getSelectorFromTarget(event.target);
+        this.clickCounts[selector] = this.clickCounts[selector] ? this.clickCounts[selector] + 1 : 1;
+        if (this.clickCounts[selector] === this.deadClickLimit) {
+            this.hasDeadClick = true;
+        }
+    };
+    DeadClick.prototype.startListening = function () {
+        window.addEventListener('click', this.clickListener.bind(this));
+    };
+    DeadClick.prototype.stopListening = function () {
+        clearInterval(this.clickCountClear);
+        window.removeEventListener('click', this.clickListener.bind(this));
+    };
+    return DeadClick;
+}());
+var deadClick = new DeadClick();
+
 ;// CONCATENATED MODULE: ./src/rprofiler/rprofiler.ts
+
+
+
 
 
 
@@ -3030,7 +3154,7 @@ var RProfiler = /** @class */ (function () {
         var _this = this;
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        this.restUrl = 'portalstage.catchpoint.com/jp/1826/v4.0.0/M';
+        this.restUrl = 'localhost:44394/jp/59/v4.0.0/s.M';
         this.startTime = new Date().getTime();
         this.eventsTimingHandler = new rprofiler_EventsTimingHandler();
         this.inputDelay = new rprofiler_InputDelayHandler();
@@ -3135,12 +3259,23 @@ var RProfiler = /** @class */ (function () {
                 inp: _this.inp
             };
         };
+        this.getFrustrationMetrics = function () {
+            return {
+                frc: rageClick.getRageClick(),
+                fec: errorClick.getErrorClick(),
+                fdc: deadClick.getDeadClick(),
+            };
+        };
         this.eventManager.add(WindowEvent.Load, window, this.recordPageLoad);
         var errorFunc = this.addError;
         this.ajaxHandler = new rprofiler_AjaxRequestsHandler();
         S(this.setCLS);
         W(this.setLCP, { reportAllChanges: true });
         Q(this.setINP, { reportAllChanges: true });
+        // Frustration event
+        rageClick.startListening();
+        errorClick.startListening();
+        deadClick.startListening();
         function recordJsError(e) {
             var ev = e.target || e.srcElement;
             if (ev.nodeType == 3) {
