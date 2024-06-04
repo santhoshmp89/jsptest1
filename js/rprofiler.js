@@ -2262,7 +2262,7 @@ var DataProvider = /** @class */ (function () {
         return postObj;
     };
     DataProvider.prototype.createDiffPostObject = function (ev, isSoftNavigation) {
-        var _a;
+        var _a, _b, _c, _d;
         var postObj = this.createBasePostObj(ev, false, isSoftNavigation);
         this.updateResources(ev, postObj);
         this.updateEngagementMetrics(postObj, isSoftNavigation);
@@ -2283,12 +2283,12 @@ var DataProvider = /** @class */ (function () {
                 postObj.inp = cpWebVitals.inp;
             }
         }
-        if (config.profiler.data.jsCount > 0) {
+        if (((_c = (_b = config === null || config === void 0 ? void 0 : config.profiler) === null || _b === void 0 ? void 0 : _b.data) === null || _c === void 0 ? void 0 : _c.jsCount) > 0) {
             postObj.jsErrorCount = config.profiler.data.jsCount;
             postObj.jsErrors = config.profiler.data.jsErrors;
             config.profiler.clearErrors();
         }
-        if (config.profiler.getAjaxRequests) {
+        if ((_d = config === null || config === void 0 ? void 0 : config.profiler) === null || _d === void 0 ? void 0 : _d.getAjaxRequests) {
             var ajaxRequests = config.profiler.getAjaxRequests();
             if (ajaxRequests) {
                 postObj.ajaxRequests = ajaxRequests.slice();
