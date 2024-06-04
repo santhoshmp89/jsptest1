@@ -752,7 +752,7 @@ var MainConfig = /** @class */ (function () {
         sampleRate: -999, // range [0 - 100]
         waterfallSampleRate: -888, // range [0 - 100]
         postUrl: _f.protocol + 'lst01a.3genlabs.net/hawklogserver/r.p',
-        siteId: 59,
+        siteId: 1860,
         debugParameter: 'GlimpseDebug',
         debugUrl: 'localhost:44394/jp/v4.0.0/s.D',
         waterfallParameter: 'GlimpseWaterfall',
@@ -2594,7 +2594,7 @@ var mainScript = function () { return __awaiter(void 0, void 0, void 0, function
                     var response, data;
                     return __generator(this, function (_a) {
                         switch (_a.label) {
-                            case 0: return [4 /*yield*/, fetch('https://localhost:44394/jp/59/v4.0.0/s.AC')];
+                            case 0: return [4 /*yield*/, fetch('https://localhost:44394/jp/1860/v4.0.0/s.AC')];
                             case 1:
                                 response = _a.sent();
                                 return [4 /*yield*/, response.json()];
@@ -3035,49 +3035,61 @@ var visComplete = function () {
 /* harmony default export */ const src_visComplete = (visComplete);
 
 ;// CONCATENATED MODULE: ./src/frustrationMetrics/RageClick.ts
+/**
+ * Detect rage clicks
+ *
+ * Rage clicks are like punching your mouse or touchpad because it doesn’t do what you want.
+ * They are triggered when a visitor clicks an element on your website multiple times, rapidly.
+ * In most cases, rage clicks signal that your website didn’t react the way your visitor expected,
+ * so you may want to take a closer look at it.
+ */
 var RageClick = /** @class */ (function () {
     function RageClick() {
         this.clickCount = 0;
-        this.clickTimeout = null;
-        this.rageLimit = 3;
+        this.clickInterval = null;
+        this.rageClickLimit = 3;
         this.timeoutDuration = 1000; // milliseconds
-        this.hasRageClick = false;
+        this.rageClickValue = 0;
     }
     RageClick.prototype.startListening = function () {
         window.addEventListener('click', this.clicklistener.bind(this));
     };
     RageClick.prototype.stopListening = function () {
-        clearTimeout(this.clickTimeout);
+        clearInterval(this.clickInterval);
         window.removeEventListener('click', this.clicklistener.bind(this));
     };
     RageClick.prototype.getRageClick = function () {
-        return this.hasRageClick;
+        return this.rageClickValue;
     };
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    RageClick.prototype.clicklistener = function (_event) {
+    RageClick.prototype.clicklistener = function () {
         var _this = this;
         this.clickCount++;
-        clearTimeout(this.clickTimeout);
-        this.clickTimeout = setTimeout(function () {
-            if (_this.clickCount >= _this.rageLimit) {
-                _this.hasRageClick = true;
-            }
+        this.clickInterval = setInterval(function () {
             _this.clickCount = 0;
         }, this.timeoutDuration);
+        if (this.clickCount >= this.rageClickLimit) {
+            this.rageClickValue = 1;
+            clearInterval(this.clickInterval);
+        }
     };
     return RageClick;
 }());
 var rageClick = new RageClick();
 
 ;// CONCATENATED MODULE: ./src/frustrationMetrics/ErrorClick.ts
+/**
+ * Detects error clicks
+ *
+ * Error clicks are clicks that result in JavaScript errors.
+ * The visitor doesn’t have to click on something many times in a row.
+ * Just one click is enough to spot an error.
+ * Often the visitor doesn’t notice that something is broken, but for you,
+ * it’s a signal that a particular JavaScript element is not working.
+ */
 var ErrorClick = /** @class */ (function () {
     function ErrorClick() {
-        var _this = this;
         this.error = '';
-        this.hasErrorClick = false;
-        window.onerror = function (msg) {
-            _this.error = msg;
-        };
+        this.errorClickValue = 0;
     }
     ErrorClick.prototype.startListening = function () {
         window.addEventListener('click', this.clicklistener.bind(this));
@@ -3086,14 +3098,16 @@ var ErrorClick = /** @class */ (function () {
         window.removeEventListener('click', this.clicklistener.bind(this));
     };
     ErrorClick.prototype.getErrorClick = function () {
-        return this.hasErrorClick;
+        return this.errorClickValue;
     };
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    ErrorClick.prototype.clicklistener = function (_event) {
+    ErrorClick.prototype.clicklistener = function () {
         var _this = this;
+        window.onerror = function (msg) {
+            _this.error = msg;
+        };
         setTimeout(function () {
             if (_this.error) {
-                _this.hasErrorClick = true;
+                _this.errorClickValue = 1;
             }
         }, 0);
     };
@@ -3103,15 +3117,24 @@ var errorClick = new ErrorClick();
 
 ;// CONCATENATED MODULE: ./src/frustrationMetrics/DeadClick.ts
 
+/**
+ * Detects dead clicks
+ *
+ * Dead clicks are clicks that have no effect on the page.
+ * The visitor clicks on the image to zoom it in, but nothing happens.
+ * He expects a text string to be a link, but it isn’t. Or he clicks on a button,
+ * but to no avail. In such situations, the visitor will end up clicking twice, quickly.
+ * Looking for dead clicks will help you find these main points of frustration and improve visitors` experience as soon as possible.
+ */
 var DeadClick = /** @class */ (function () {
     function DeadClick() {
         this.clickCounts = {};
-        this.deadClickLimit = 3;
-        this.hasDeadClick = false;
+        this.deadClickLimit = 2;
+        this.deadClickValue = 0;
         this.timeoutDuration = 1000; // milliseconds
     }
     DeadClick.prototype.getDeadClick = function () {
-        return this.hasDeadClick;
+        return this.deadClickValue;
     };
     DeadClick.prototype.clickListener = function (event) {
         var _this = this;
@@ -3121,14 +3144,14 @@ var DeadClick = /** @class */ (function () {
         var selector = getSelectorFromTarget(event.target);
         this.clickCounts[selector] = this.clickCounts[selector] ? this.clickCounts[selector] + 1 : 1;
         if (this.clickCounts[selector] === this.deadClickLimit) {
-            this.hasDeadClick = true;
+            this.deadClickValue = 1;
+            clearInterval(this.clickCountClear);
         }
     };
     DeadClick.prototype.startListening = function () {
         window.addEventListener('click', this.clickListener.bind(this));
     };
     DeadClick.prototype.stopListening = function () {
-        clearInterval(this.clickCountClear);
         window.removeEventListener('click', this.clickListener.bind(this));
     };
     return DeadClick;
@@ -3154,7 +3177,7 @@ var RProfiler = /** @class */ (function () {
         var _this = this;
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        this.restUrl = 'localhost:44394/jp/59/v4.0.0/s.M';
+        this.restUrl = 'localhost:44394/jp/1860/v4.0.0/s.M';
         this.startTime = new Date().getTime();
         this.eventsTimingHandler = new rprofiler_EventsTimingHandler();
         this.inputDelay = new rprofiler_InputDelayHandler();
