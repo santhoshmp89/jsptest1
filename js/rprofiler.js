@@ -3092,7 +3092,11 @@ var ErrorClick = /** @class */ (function () {
         this.errorClickValue = 0;
     }
     ErrorClick.prototype.startListening = function () {
+        var _this = this;
         window.addEventListener('click', this.clicklistener.bind(this));
+        window.onerror = function (msg) {
+            _this.error = msg;
+        };
     };
     ErrorClick.prototype.stopListening = function () {
         window.removeEventListener('click', this.clicklistener.bind(this));
@@ -3102,9 +3106,6 @@ var ErrorClick = /** @class */ (function () {
     };
     ErrorClick.prototype.clicklistener = function () {
         var _this = this;
-        window.onerror = function (msg) {
-            _this.error = msg;
-        };
         setTimeout(function () {
             if (_this.error) {
                 _this.errorClickValue = 1;
