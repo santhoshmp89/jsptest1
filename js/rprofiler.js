@@ -3091,18 +3091,17 @@ var ErrorClick = /** @class */ (function () {
         this.errorClickValue = 0;
     }
     ErrorClick.prototype.startListening = function () {
+        var _this = this;
         window.addEventListener('click', this.clicklistener.bind(this));
-        window.addEventListener('error', this.catchError.bind(this));
+        window.onerror = function (msg) {
+            _this.error = msg;
+        };
     };
     ErrorClick.prototype.stopListening = function () {
         window.removeEventListener('click', this.clicklistener.bind(this));
     };
     ErrorClick.prototype.getErrorClick = function () {
         return this.errorClickValue;
-    };
-    ErrorClick.prototype.catchError = function (e) {
-        var message = e.message;
-        this.error = message;
     };
     ErrorClick.prototype.clicklistener = function () {
         var _this = this;
@@ -3111,7 +3110,7 @@ var ErrorClick = /** @class */ (function () {
                 _this.errorClickValue = 1;
             }
             _this.stopListening();
-        }, 0);
+        }, 500);
     };
     return ErrorClick;
 }());
