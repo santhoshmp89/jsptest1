@@ -16,8 +16,6 @@ function makeAjaxCall() {
 	});
 }
 
-console.log(noVal);
-
 const button = document.getElementById('button');
 button.addEventListener('click', function() {
 	makeAjaxCall();	
