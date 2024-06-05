@@ -754,7 +754,7 @@ var MainConfig = /** @class */ (function () {
         postUrl: _f.protocol + 'lst01a.3genlabs.net/hawklogserver/r.p',
         siteId: 1826,
         debugParameter: 'GlimpseDebug',
-        debugUrl: 'https://portalstage.catchpoint.com/jp/1826/v4.0.0/s.D',
+        debugUrl: 'localhost:44394/jp/v4.0.0/s.D',
         waterfallParameter: 'GlimpseWaterfall',
         sendOnLoad: false, // default is send onunload
         clearResources: true, // clear performance entries when we send data to core. using performance.clearResourceTimings()
@@ -2594,7 +2594,7 @@ var mainScript = function () { return __awaiter(void 0, void 0, void 0, function
                     var response, data;
                     return __generator(this, function (_a) {
                         switch (_a.label) {
-                            case 0: return [4 /*yield*/, fetch('https://portalstage.catchpoint.com/jp/1826/v4.0.0/AC')];
+                            case 0: return [4 /*yield*/, fetch('https://localhost:44394/jp/1826/v4.0.0/s.AC')];
                             case 1:
                                 response = _a.sent();
                                 return [4 /*yield*/, response.json()];
@@ -3046,7 +3046,6 @@ var visComplete = function () {
 var RageClick = /** @class */ (function () {
     function RageClick() {
         this.clickCount = 0;
-        this.clickInterval = null;
         this.rageClickLimit = 3;
         this.timeoutDuration = 1000; // milliseconds
         this.rageClickValue = 0;
@@ -3055,7 +3054,6 @@ var RageClick = /** @class */ (function () {
         window.addEventListener('click', this.clicklistener.bind(this));
     };
     RageClick.prototype.stopListening = function () {
-        clearInterval(this.clickInterval);
         window.removeEventListener('click', this.clicklistener.bind(this));
     };
     RageClick.prototype.getRageClick = function () {
@@ -3064,12 +3062,13 @@ var RageClick = /** @class */ (function () {
     RageClick.prototype.clicklistener = function () {
         var _this = this;
         this.clickCount++;
-        this.clickInterval = setInterval(function () {
+        var clickInterval = setInterval(function () {
             _this.clickCount = 0;
+            clearInterval(clickInterval);
         }, this.timeoutDuration);
         if (this.clickCount >= this.rageClickLimit) {
             this.rageClickValue = 1;
-            clearInterval(this.clickInterval);
+            clearInterval(clickInterval);
         }
     };
     return RageClick;
@@ -3092,11 +3091,8 @@ var ErrorClick = /** @class */ (function () {
         this.errorClickValue = 0;
     }
     ErrorClick.prototype.startListening = function () {
-        var _this = this;
         window.addEventListener('click', this.clicklistener.bind(this));
-        window.onerror = function (msg) {
-            _this.error = msg;
-        };
+        window.addEventListener('error', this.catchError.bind(this));
     };
     ErrorClick.prototype.stopListening = function () {
         window.removeEventListener('click', this.clicklistener.bind(this));
@@ -3104,12 +3100,17 @@ var ErrorClick = /** @class */ (function () {
     ErrorClick.prototype.getErrorClick = function () {
         return this.errorClickValue;
     };
+    ErrorClick.prototype.catchError = function (e) {
+        var message = e.message;
+        this.error = message;
+    };
     ErrorClick.prototype.clicklistener = function () {
         var _this = this;
         setTimeout(function () {
             if (_this.error) {
                 _this.errorClickValue = 1;
             }
+            _this.stopListening();
         }, 0);
     };
     return ErrorClick;
@@ -3139,14 +3140,15 @@ var DeadClick = /** @class */ (function () {
     };
     DeadClick.prototype.clickListener = function (event) {
         var _this = this;
-        this.clickCountClear = setInterval(function () {
+        var clickCountClear = setInterval(function () {
             _this.clickCounts = {};
+            clearInterval(clickCountClear);
         }, this.timeoutDuration);
         var selector = getSelectorFromTarget(event.target);
         this.clickCounts[selector] = this.clickCounts[selector] ? this.clickCounts[selector] + 1 : 1;
         if (this.clickCounts[selector] === this.deadClickLimit) {
             this.deadClickValue = 1;
-            clearInterval(this.clickCountClear);
+            clearInterval(clickCountClear);
         }
     };
     DeadClick.prototype.startListening = function () {
@@ -3178,7 +3180,7 @@ var RProfiler = /** @class */ (function () {
         var _this = this;
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        this.restUrl = 'portalstage.catchpoint.com/jp/59/v4.0.0/M';
+        this.restUrl = 'localhost:44394/jp/1826/v4.0.0/s.M';
         this.startTime = new Date().getTime();
         this.eventsTimingHandler = new rprofiler_EventsTimingHandler();
         this.inputDelay = new rprofiler_InputDelayHandler();
