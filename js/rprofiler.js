@@ -35,7 +35,7 @@
 /************************************************************************/
 var __webpack_exports__ = {};
 /*!*************************************************!*\
-  !*** ./src/rprofiler/rprofiler.ts + 29 modules ***!
+  !*** ./src/rprofiler/rprofiler.ts + 30 modules ***!
   \*************************************************/
 // ESM COMPAT FLAG
 __webpack_require__.r(__webpack_exports__);
@@ -3050,11 +3050,9 @@ var RageClick = /** @class */ (function () {
         this.timeoutDuration = 1000; // milliseconds
         this.rageClickValue = 0;
     }
-    RageClick.prototype.startListening = function () {
-        window.addEventListener('click', this.clicklistener.bind(this));
-    };
-    RageClick.prototype.stopListening = function () {
-        window.removeEventListener('click', this.clicklistener.bind(this));
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    RageClick.prototype.startListening = function (_event) {
+        this.clicklistener();
     };
     RageClick.prototype.getRageClick = function () {
         return this.rageClickValue;
@@ -3090,15 +3088,13 @@ var ErrorClick = /** @class */ (function () {
         this.error = '';
         this.errorClickValue = 0;
     }
-    ErrorClick.prototype.startListening = function () {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    ErrorClick.prototype.startListening = function (_event) {
         var _this = this;
-        window.addEventListener('click', this.clicklistener.bind(this));
         window.onerror = function (msg) {
             _this.error = msg;
         };
-    };
-    ErrorClick.prototype.stopListening = function () {
-        window.removeEventListener('click', this.clicklistener.bind(this));
+        this.clicklistener();
     };
     ErrorClick.prototype.getErrorClick = function () {
         return this.errorClickValue;
@@ -3109,8 +3105,7 @@ var ErrorClick = /** @class */ (function () {
             if (_this.error) {
                 _this.errorClickValue = 1;
             }
-            _this.stopListening();
-        }, 500);
+        }, 0);
     };
     return ErrorClick;
 }());
@@ -3150,17 +3145,37 @@ var DeadClick = /** @class */ (function () {
             clearInterval(clickCountClear);
         }
     };
-    DeadClick.prototype.startListening = function () {
-        window.addEventListener('click', this.clickListener.bind(this));
-    };
-    DeadClick.prototype.stopListening = function () {
-        window.removeEventListener('click', this.clickListener.bind(this));
+    DeadClick.prototype.startListening = function (event) {
+        this.clickListener(event);
     };
     return DeadClick;
 }());
 var deadClick = new DeadClick();
 
+;// CONCATENATED MODULE: ./src/frustrationMetrics/FrustrationMetrics.ts
+
+
+
+var FrustrationMetrics = /** @class */ (function () {
+    function FrustrationMetrics() {
+    }
+    FrustrationMetrics.prototype.listenClickEvent = function (event) {
+        rageClick.startListening(event);
+        errorClick.startListening(event);
+        deadClick.startListening(event);
+    };
+    FrustrationMetrics.prototype.startListeningClickEvent = function () {
+        window.addEventListener('click', this.listenClickEvent.bind(this));
+    };
+    FrustrationMetrics.prototype.stopListeningClickEvent = function () {
+        window.removeEventListener('click', this.listenClickEvent.bind(this));
+    };
+    return FrustrationMetrics;
+}());
+var frustrationMetrics = new FrustrationMetrics();
+
 ;// CONCATENATED MODULE: ./src/rprofiler/rprofiler.ts
+
 
 
 
@@ -3288,7 +3303,7 @@ var RProfiler = /** @class */ (function () {
             return {
                 frc: rageClick.getRageClick(),
                 fec: errorClick.getErrorClick(),
-                fdc: deadClick.getDeadClick(),
+                fdc: deadClick.getDeadClick()
             };
         };
         this.eventManager.add(WindowEvent.Load, window, this.recordPageLoad);
@@ -3298,9 +3313,7 @@ var RProfiler = /** @class */ (function () {
         W(this.setLCP, { reportAllChanges: true });
         Q(this.setINP, { reportAllChanges: true });
         // Frustration event
-        rageClick.startListening();
-        errorClick.startListening();
-        deadClick.startListening();
+        frustrationMetrics.startListeningClickEvent();
         function recordJsError(e) {
             var ev = e.target || e.srcElement;
             if (ev.nodeType == 3) {
