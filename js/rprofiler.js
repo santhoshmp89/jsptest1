@@ -3364,6 +3364,7 @@ var RProfiler = /** @class */ (function () {
         Q(this.setINP, { reportAllChanges: true });
         // Frustration event
         frustrationMetrics.startListeningClickEvent();
+        frustrationMetrics.startListeningMouseMove();
         function recordJsError(e) {
             var ev = e.target || e.srcElement;
             if (ev.nodeType == 3) {
