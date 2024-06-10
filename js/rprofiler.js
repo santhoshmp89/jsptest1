@@ -1389,6 +1389,7 @@ var PostData = /** @class */ (function (_super) {
                 obj['frc'] = this.frc;
                 obj['fec'] = this.fec;
                 obj['fdc'] = this.fdc;
+                obj['ftc'] = this.ftc;
                 if (this.secureConnect) {
                     obj['sc'] = this.secureConnect;
                 }
@@ -1418,6 +1419,7 @@ var PostData = /** @class */ (function (_super) {
             obj['frc'] = this.frc;
             obj['fec'] = this.fec;
             obj['fdc'] = this.fdc;
+            obj['ftc'] = this.ftc;
             if (!isSoftNavigation) {
                 obj['fp'] = this.firstPaint;
                 obj['fcp'] = this.firstContentPaint;
@@ -2301,6 +2303,7 @@ var DataProvider = /** @class */ (function () {
                 postObj.frc = cpFrustrationMetrics.frc;
                 postObj.fec = cpFrustrationMetrics.fec;
                 postObj.fdc = cpFrustrationMetrics.fdc;
+                postObj.ftc = cpFrustrationMetrics.ftc;
             }
         }
         return postObj;
@@ -3156,7 +3159,7 @@ var deadClick = new DeadClick();
 var ThrashedCursor = /** @class */ (function () {
     function ThrashedCursor() {
         var _this = this;
-        this.threshold = 0.5;
+        this.threshold = 0.01;
         this.mouseMoveListener = function (event) {
             var nextDirection = Math.sign(event.movementX);
             _this.distance += Math.abs(event.movementX) + Math.abs(event.movementY);
@@ -3167,7 +3170,8 @@ var ThrashedCursor = /** @class */ (function () {
         };
         this.directionChangeCount = 0;
         this.distance = 0;
-        this.interval = 1000;
+        this.interval = 350;
+        this.thrashedCursorValue = false;
         var intervalClear = setInterval(function () {
             var nextVelocity = _this.distance / _this.interval;
             if (!_this.velocity) {
@@ -3178,13 +3182,16 @@ var ThrashedCursor = /** @class */ (function () {
             if (_this.directionChangeCount && acceleration > _this.threshold) {
                 // clearing the interval after detecting thrashed cursor
                 clearInterval(intervalClear);
-                console.log('Trashed cursor detected');
+                _this.thrashedCursorValue = true;
             }
             _this.distance = 0;
             _this.directionChangeCount = 0;
             _this.velocity = nextVelocity;
         }, this.interval);
     }
+    ThrashedCursor.prototype.getThrashedCursor = function () {
+        return this.thrashedCursorValue;
+    };
     ThrashedCursor.prototype.startListening = function (event) {
         this.mouseMoveListener(event);
     };
@@ -3225,6 +3232,7 @@ var FrustrationMetrics = /** @class */ (function () {
 var frustrationMetrics = new FrustrationMetrics();
 
 ;// CONCATENATED MODULE: ./src/rprofiler/rprofiler.ts
+
 
 
 
@@ -3353,7 +3361,8 @@ var RProfiler = /** @class */ (function () {
             return {
                 frc: rageClick.getRageClick(),
                 fec: errorClick.getErrorClick(),
-                fdc: deadClick.getDeadClick()
+                fdc: deadClick.getDeadClick(),
+                ftc: thrashedCursor.getThrashedCursor()
             };
         };
         this.eventManager.add(WindowEvent.Load, window, this.recordPageLoad);
