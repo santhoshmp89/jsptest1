@@ -35,7 +35,7 @@
 /************************************************************************/
 var __webpack_exports__ = {};
 /*!*************************************************!*\
-  !*** ./src/rprofiler/rprofiler.ts + 30 modules ***!
+  !*** ./src/rprofiler/rprofiler.ts + 31 modules ***!
   \*************************************************/
 // ESM COMPAT FLAG
 __webpack_require__.r(__webpack_exports__);
@@ -3152,7 +3152,48 @@ var DeadClick = /** @class */ (function () {
 }());
 var deadClick = new DeadClick();
 
+;// CONCATENATED MODULE: ./src/frustrationMetrics/ThrashedCursor.ts
+var ThrashedCursor = /** @class */ (function () {
+    function ThrashedCursor() {
+        var _this = this;
+        this.threshold = 0.5;
+        this.mouseMoveListener = function (event) {
+            var nextDirection = Math.sign(event.movementX);
+            _this.distance += Math.abs(event.movementX) + Math.abs(event.movementY);
+            if (nextDirection !== _this.direction) {
+                _this.direction = nextDirection;
+                _this.directionChangeCount++;
+            }
+        };
+        this.directionChangeCount = 0;
+        this.distance = 0;
+        this.interval = 1000;
+        var intervalClear = setInterval(function () {
+            var nextVelocity = _this.distance / _this.interval;
+            if (!_this.velocity) {
+                _this.velocity = nextVelocity;
+                return;
+            }
+            var acceleration = (nextVelocity - _this.velocity) / _this.interval;
+            if (_this.directionChangeCount && acceleration > _this.threshold) {
+                // clearing the interval after detecting thrashed cursor
+                clearInterval(intervalClear);
+                console.log('Trashed cursor detected');
+            }
+            _this.distance = 0;
+            _this.directionChangeCount = 0;
+            _this.velocity = nextVelocity;
+        }, this.interval);
+    }
+    ThrashedCursor.prototype.startListening = function (event) {
+        this.mouseMoveListener(event);
+    };
+    return ThrashedCursor;
+}());
+var thrashedCursor = new ThrashedCursor();
+
 ;// CONCATENATED MODULE: ./src/frustrationMetrics/FrustrationMetrics.ts
+
 
 
 
@@ -3164,11 +3205,20 @@ var FrustrationMetrics = /** @class */ (function () {
         errorClick.startListening(event);
         deadClick.startListening(event);
     };
+    FrustrationMetrics.prototype.listenMouseMove = function (event) {
+        thrashedCursor.startListening(event);
+    };
     FrustrationMetrics.prototype.startListeningClickEvent = function () {
         window.addEventListener('click', this.listenClickEvent.bind(this));
     };
     FrustrationMetrics.prototype.stopListeningClickEvent = function () {
         window.removeEventListener('click', this.listenClickEvent.bind(this));
+    };
+    FrustrationMetrics.prototype.startListeningMouseMove = function () {
+        window.addEventListener('mousemove', this.listenMouseMove.bind(this));
+    };
+    FrustrationMetrics.prototype.stopListeningMouseMove = function () {
+        window.removeEventListener('mousemove', this.listenMouseMove.bind(this));
     };
     return FrustrationMetrics;
 }());
