@@ -3239,15 +3239,16 @@ var RProfiler = /** @class */ (function () {
         };
         // Value being used instead delta as metricValue, Delta provide single value and value is for overall value.
         this.setINP = function (_a) {
-            var metricName = _a.name, metricValue = _a.value, debugInfo = _a.attribution;
+            var metricName = _a.name, metricValue = _a.value, attribution = _a.attribution;
             if (metricName === 'INP') {
                 _this.inp = metricValue;
                 var eventParams = {
-                    t: debugInfo.eventTarget,
-                    eT: debugInfo.eventType,
-                    lS: debugInfo.loadState,
-                    eti: debugInfo.eventTime,
-                    ety: debugInfo.eventEntry
+                    t: attribution.eventTarget,
+                    sTi: attribution.eventEntry.processingStart,
+                    eTi: attribution.eventEntry.processingEnd,
+                    eTy: attribution.eventType,
+                    v: metricValue,
+                    ls: attribution.loadState
                 };
                 _this.inpDe.push(rprofiler_assign({}, eventParams));
             }
