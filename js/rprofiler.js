@@ -35,7 +35,7 @@
 /************************************************************************/
 var __webpack_exports__ = {};
 /*!*************************************************!*\
-  !*** ./src/rprofiler/rprofiler.ts + 26 modules ***!
+  !*** ./src/rprofiler/rprofiler.ts + 31 modules ***!
   \*************************************************/
 // ESM COMPAT FLAG
 __webpack_require__.r(__webpack_exports__);
@@ -747,14 +747,14 @@ var MainConfig = /** @class */ (function () {
     MainConfig.hasPerformanceApi = !!_f.pageWindow.performance && typeof _f.pageWindow.performance === 'object';
     MainConfig.hasGetEntriesApi = _f.hasPerformanceApi && typeof _f.pageWindow.performance.getEntriesByType === 'function';
     MainConfig.testUserId = "test";
-    MainConfig.version = 'v4.0.0';
+    MainConfig.version = 'v4.0.1';
     MainConfig.config = {
         sampleRate: -999, // range [0 - 100]
         waterfallSampleRate: -888, // range [0 - 100]
         postUrl: _f.protocol + 'lst01a.3genlabs.net/hawklogserver/r.p',
         siteId: 1826,
         debugParameter: 'GlimpseDebug',
-        debugUrl: 'localhost:44394/jp/v4.0.0/s.D',
+        debugUrl: 'localhost:44394/jp/v4.0.1/s.D',
         waterfallParameter: 'GlimpseWaterfall',
         sendOnLoad: false, // default is send onunload
         clearResources: true, // clear performance entries when we send data to core. using performance.clearResourceTimings()
@@ -1386,6 +1386,10 @@ var PostData = /** @class */ (function (_super) {
                 obj['cls'] = this.cls;
                 obj['lcp'] = this.lcp;
                 obj['inp'] = this.inp;
+                obj['frc'] = this.frc;
+                obj['fec'] = this.fec;
+                obj['fdc'] = this.fdc;
+                obj['ftc'] = this.ftc;
                 if (this.secureConnect) {
                     obj['sc'] = this.secureConnect;
                 }
@@ -1418,6 +1422,10 @@ var PostData = /** @class */ (function (_super) {
                 obj['cls'] = this.cls;
                 obj['lcp'] = this.lcp;
                 obj['inp'] = this.inp;
+                obj['frc'] = this.frc;
+                obj['fec'] = this.fec;
+                obj['fdc'] = this.fdc;
+                obj['ftc'] = this.ftc;
             }
         }
         return obj;
@@ -2256,6 +2264,7 @@ var DataProvider = /** @class */ (function () {
         return postObj;
     };
     DataProvider.prototype.createDiffPostObject = function (ev, isSoftNavigation) {
+        var _a, _b, _c, _d;
         var postObj = this.createBasePostObj(ev, false, isSoftNavigation);
         this.updateResources(ev, postObj);
         this.updateEngagementMetrics(postObj, isSoftNavigation);
@@ -2264,7 +2273,7 @@ var DataProvider = /** @class */ (function () {
         if (visComplete) {
             postObj.visComplete = visComplete;
         }
-        if (config.profiler && config.profiler.getCPWebVitals) {
+        if ((_a = config === null || config === void 0 ? void 0 : config.profiler) === null || _a === void 0 ? void 0 : _a.getCPWebVitals) {
             var cpWebVitals = config.profiler.getCPWebVitals();
             if (cpWebVitals.cls) {
                 postObj.cls = cpWebVitals.cls;
@@ -2276,16 +2285,25 @@ var DataProvider = /** @class */ (function () {
                 postObj.inp = cpWebVitals.inp;
             }
         }
-        if (config.profiler.data.jsCount > 0) {
+        if (((_c = (_b = config === null || config === void 0 ? void 0 : config.profiler) === null || _b === void 0 ? void 0 : _b.data) === null || _c === void 0 ? void 0 : _c.jsCount) > 0) {
             postObj.jsErrorCount = config.profiler.data.jsCount;
             postObj.jsErrors = config.profiler.data.jsErrors;
             config.profiler.clearErrors();
         }
-        if (config.profiler && config.profiler.getAjaxRequests) {
+        if ((_d = config === null || config === void 0 ? void 0 : config.profiler) === null || _d === void 0 ? void 0 : _d.getAjaxRequests) {
             var ajaxRequests = config.profiler.getAjaxRequests();
             if (ajaxRequests) {
                 postObj.ajaxRequests = ajaxRequests.slice();
                 config.profiler.clearAjaxRequests();
+            }
+        }
+        if (config === null || config === void 0 ? void 0 : config.profiler.getFrustrationMetrics) {
+            var cpFrustrationMetrics = config.profiler.getFrustrationMetrics();
+            if (cpFrustrationMetrics) {
+                postObj.frc = cpFrustrationMetrics.frc;
+                postObj.fec = cpFrustrationMetrics.fec;
+                postObj.fdc = cpFrustrationMetrics.fdc;
+                postObj.ftc = cpFrustrationMetrics.ftc;
             }
         }
         return postObj;
@@ -2579,7 +2597,7 @@ var mainScript = function () { return __awaiter(void 0, void 0, void 0, function
                     var response, data;
                     return __generator(this, function (_a) {
                         switch (_a.label) {
-                            case 0: return [4 /*yield*/, fetch('https://localhost:44394/jp/1826/v4.0.0/s.AC')];
+                            case 0: return [4 /*yield*/, fetch('https://localhost:44394/jp/1826/v4.0.1/s.AC')];
                             case 1:
                                 response = _a.sent();
                                 return [4 /*yield*/, response.json()];
@@ -2623,6 +2641,11 @@ var extractImageUrl = function (backgroundImage) {
         }
     }
     return null;
+};
+var getSelectorFromTarget = function (target) {
+    var className = target.className !== '' ? ".".concat(target.className) : '';
+    var targetId = target.id !== '' ? "#".concat(target.id) : '';
+    return [target.nodeName, className, targetId].join(' ');
 };
 
 ;// CONCATENATED MODULE: ./src/visComplete.ts
@@ -3014,7 +3037,215 @@ var visComplete = function () {
 };
 /* harmony default export */ const src_visComplete = (visComplete);
 
+;// CONCATENATED MODULE: ./src/frustrationMetrics/RageClick.ts
+/**
+ * Detect rage clicks
+ *
+ * Rage clicks are like punching your mouse or touchpad because it doesn’t do what you want.
+ * They are triggered when a visitor clicks an element on your website multiple times, rapidly.
+ * In most cases, rage clicks signal that your website didn’t react the way your visitor expected,
+ * so you may want to take a closer look at it.
+ */
+var RageClick = /** @class */ (function () {
+    function RageClick() {
+        this.clickCount = 0;
+        this.rageClickLimit = 3;
+        this.timeoutDuration = 1000; // milliseconds
+        this.rageClickValue = 0;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    RageClick.prototype.startListening = function (_event) {
+        this.clicklistener();
+    };
+    RageClick.prototype.getRageClick = function () {
+        return this.rageClickValue;
+    };
+    RageClick.prototype.clicklistener = function () {
+        var _this = this;
+        this.clickCount++;
+        var clickInterval = setInterval(function () {
+            _this.clickCount = 0;
+            clearInterval(clickInterval);
+        }, this.timeoutDuration);
+        if (this.clickCount >= this.rageClickLimit) {
+            this.rageClickValue = 1;
+            clearInterval(clickInterval);
+        }
+    };
+    return RageClick;
+}());
+var rageClick = new RageClick();
+
+;// CONCATENATED MODULE: ./src/frustrationMetrics/ErrorClick.ts
+/**
+ * Detects error clicks
+ *
+ * Error clicks are clicks that result in JavaScript errors.
+ * The visitor doesn’t have to click on something many times in a row.
+ * Just one click is enough to spot an error.
+ * Often the visitor doesn’t notice that something is broken, but for you,
+ * it’s a signal that a particular JavaScript element is not working.
+ */
+var ErrorClick = /** @class */ (function () {
+    function ErrorClick() {
+        this.error = '';
+        this.errorClickValue = 0;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    ErrorClick.prototype.startListening = function (_event) {
+        var _this = this;
+        window.onerror = function (msg) {
+            _this.error = msg;
+        };
+        this.clicklistener();
+    };
+    ErrorClick.prototype.getErrorClick = function () {
+        return this.errorClickValue;
+    };
+    ErrorClick.prototype.clicklistener = function () {
+        var _this = this;
+        setTimeout(function () {
+            if (_this.error) {
+                _this.errorClickValue = 1;
+            }
+        }, 0);
+    };
+    return ErrorClick;
+}());
+var errorClick = new ErrorClick();
+
+;// CONCATENATED MODULE: ./src/frustrationMetrics/DeadClick.ts
+
+/**
+ * Detects dead clicks
+ *
+ * Dead clicks are clicks that have no effect on the page.
+ * The visitor clicks on the image to zoom it in, but nothing happens.
+ * He expects a text string to be a link, but it isn’t. Or he clicks on a button,
+ * but to no avail. In such situations, the visitor will end up clicking twice, quickly.
+ * Looking for dead clicks will help you find these main points of frustration and improve visitors` experience as soon as possible.
+ */
+var DeadClick = /** @class */ (function () {
+    function DeadClick() {
+        this.clickCounts = {};
+        this.deadClickLimit = 2;
+        this.deadClickValue = 0;
+        this.timeoutDuration = 1000; // milliseconds
+    }
+    DeadClick.prototype.getDeadClick = function () {
+        return this.deadClickValue;
+    };
+    DeadClick.prototype.clickListener = function (event) {
+        var _this = this;
+        var clickCountClear = setInterval(function () {
+            _this.clickCounts = {};
+            clearInterval(clickCountClear);
+        }, this.timeoutDuration);
+        var selector = getSelectorFromTarget(event.target);
+        this.clickCounts[selector] = this.clickCounts[selector] ? this.clickCounts[selector] + 1 : 1;
+        if (this.clickCounts[selector] === this.deadClickLimit) {
+            this.deadClickValue = 1;
+            clearInterval(clickCountClear);
+        }
+    };
+    DeadClick.prototype.startListening = function (event) {
+        this.clickListener(event);
+    };
+    return DeadClick;
+}());
+var deadClick = new DeadClick();
+
+;// CONCATENATED MODULE: ./src/frustrationMetrics/ThrashedCursor.ts
+/**
+ * Detect mouse shake
+ *
+ * Mouse shaking is when users erratically move their cursor back and forth.
+ * Rapidly moving the cursor over a page can indicate
+ * the user is getting exasperated with some aspect of their experience.
+ * Perhaps the site performance is slow or they are struggling to figure something out.
+ *
+ */
+var ThrashedCursor = /** @class */ (function () {
+    function ThrashedCursor() {
+        var _this = this;
+        this.mouseMoveListener = function (event) {
+            var nextDirection = Math.sign(event.movementX);
+            _this.distance += Math.abs(event.movementX) + Math.abs(event.movementY);
+            if (nextDirection !== _this.direction) {
+                _this.direction = nextDirection;
+                _this.directionChangeCount++;
+            }
+        };
+        this.directionChangeCount = 0;
+        this.distance = 0;
+        this.interval = 350;
+        this.threshold = 0.01;
+        this.thrashedCursorValue = false;
+        var intervalClear = setInterval(function () {
+            var nextVelocity = _this.distance / _this.interval;
+            if (!_this.velocity) {
+                _this.velocity = nextVelocity;
+                return;
+            }
+            var acceleration = (nextVelocity - _this.velocity) / _this.interval;
+            if (_this.directionChangeCount && acceleration > _this.threshold) {
+                // clearing the interval after detecting thrashed cursor
+                clearInterval(intervalClear);
+                _this.thrashedCursorValue = true;
+            }
+            _this.distance = 0;
+            _this.directionChangeCount = 0;
+            _this.velocity = nextVelocity;
+        }, this.interval);
+    }
+    ThrashedCursor.prototype.getThrashedCursor = function () {
+        return this.thrashedCursorValue;
+    };
+    ThrashedCursor.prototype.startListening = function (event) {
+        this.mouseMoveListener(event);
+    };
+    return ThrashedCursor;
+}());
+var thrashedCursor = new ThrashedCursor();
+
+;// CONCATENATED MODULE: ./src/frustrationMetrics/FrustrationMetrics.ts
+
+
+
+
+var FrustrationMetrics = /** @class */ (function () {
+    function FrustrationMetrics() {
+    }
+    FrustrationMetrics.prototype.listenClickEvent = function (event) {
+        rageClick.startListening(event);
+        errorClick.startListening(event);
+        deadClick.startListening(event);
+    };
+    FrustrationMetrics.prototype.listenMouseMove = function (event) {
+        thrashedCursor.startListening(event);
+    };
+    FrustrationMetrics.prototype.startListeningClickEvent = function () {
+        window.addEventListener('click', this.listenClickEvent.bind(this));
+    };
+    FrustrationMetrics.prototype.stopListeningClickEvent = function () {
+        window.removeEventListener('click', this.listenClickEvent.bind(this));
+    };
+    FrustrationMetrics.prototype.startListeningMouseMove = function () {
+        window.addEventListener('mousemove', this.listenMouseMove.bind(this));
+    };
+    FrustrationMetrics.prototype.stopListeningMouseMove = function () {
+        window.removeEventListener('mousemove', this.listenMouseMove.bind(this));
+    };
+    return FrustrationMetrics;
+}());
+var frustrationMetrics = new FrustrationMetrics();
+
 ;// CONCATENATED MODULE: ./src/rprofiler/rprofiler.ts
+
+
+
+
+
 
 
 
@@ -3030,11 +3261,11 @@ var RProfiler = /** @class */ (function () {
         var _this = this;
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        this.restUrl = 'localhost:44394/jp/1826/v4.0.0/s.M';
+        this.restUrl = 'localhost:44394/jp/1826/v4.0.1/s.M';
         this.startTime = new Date().getTime();
         this.eventsTimingHandler = new rprofiler_EventsTimingHandler();
         this.inputDelay = new rprofiler_InputDelayHandler();
-        this.version = 'v4.0.0'; //version number of inline script
+        this.version = 'v4.0.1'; //version number of inline script
         this.info = {};
         this.hasInsight = false;
         this.data = {
@@ -3135,12 +3366,23 @@ var RProfiler = /** @class */ (function () {
                 inp: _this.inp
             };
         };
+        this.getFrustrationMetrics = function () {
+            return {
+                frc: rageClick.getRageClick(),
+                fec: errorClick.getErrorClick(),
+                fdc: deadClick.getDeadClick(),
+                ftc: thrashedCursor.getThrashedCursor()
+            };
+        };
         this.eventManager.add(WindowEvent.Load, window, this.recordPageLoad);
         var errorFunc = this.addError;
         this.ajaxHandler = new rprofiler_AjaxRequestsHandler();
         S(this.setCLS);
         W(this.setLCP, { reportAllChanges: true });
         Q(this.setINP, { reportAllChanges: true });
+        // Frustration event
+        frustrationMetrics.startListeningClickEvent();
+        frustrationMetrics.startListeningMouseMove();
         function recordJsError(e) {
             var ev = e.target || e.srcElement;
             if (ev.nodeType == 3) {
