@@ -831,9 +831,9 @@ https://templatemo.com/tm-590-topic-listing
 	          	return div;
 		}
 
-		for (i = 0; i < acc.length; i++) {
+		for (i = 1; i <= acc.length; i++) {
 		  acc[i].addEventListener("click", function() {
-			var cont = mockLongTask(i * 10000000)  
+			var cont = mockLongTask(i * 10000)  
 			setTimeout(() => {
 			  this.classList.toggle("active");
 			  var panel = this.nextElementSibling;
