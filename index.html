@@ -820,9 +820,9 @@ https://templatemo.com/tm-590-topic-listing
 		var acc = document.getElementsByClassName("accordion");
 		var i;
 
-		function mockLongTask(a) {
+		function mockLongTask() {
 			var div = document.createElement('div');
-			  while (i < a) {
+			  while (i < 10000) {
 	            		var p = document.createElement('p');
 		            	p.innerHTML = "para" + i;
 		          	div.appendChild(p);
@@ -833,7 +833,7 @@ https://templatemo.com/tm-590-topic-listing
 
 		for (i = 0; i <= acc.length; i++) {
 		  acc[i].addEventListener("click", function() {
-			var cont = mockLongTask((10000)  
+			var cont = mockLongTask()  
 			setTimeout(() => {
 			  this.classList.toggle("active");
 			  var panel = this.nextElementSibling;
