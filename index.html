@@ -821,17 +821,23 @@ https://templatemo.com/tm-590-topic-listing
 		var i;
 
 		function mockLongTask(a) {
-		  while (a < 10000000) {
-		    a++
-		  }
+			var div = document.createElement('div');
+			  while (i < a) {
+	            		var p = document.createElement('p');
+		            	p.innerHTML = "para" + a;
+		          	div.appendChild(p);
+			    	i++
+			  }
+	          	return div;
 		}
 
 		for (i = 0; i < acc.length; i++) {
 		  acc[i].addEventListener("click", function() {
-			mockLongTask(i * 10000000)  
+			var cont = mockLongTask(i * 10000000)  
 			setTimeout(() => {
 			  this.classList.toggle("active");
 			  var panel = this.nextElementSibling;
+			  panel.appendChild(cont);
 			  if (panel.style.display === "block") {
 				panel.style.display = "none";
 			  } else {
