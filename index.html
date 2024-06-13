@@ -820,8 +820,15 @@ https://templatemo.com/tm-590-topic-listing
 		var acc = document.getElementsByClassName("accordion");
 		var i;
 
+		function mockLongTask(a) {
+		  while (a < 10000000) {
+		    a++
+		  }
+		}
+
 		for (i = 0; i < acc.length; i++) {
 		  acc[i].addEventListener("click", function() {
+			mockLongTask(i * 10000000)  
 			setTimeout(() => {
 			  this.classList.toggle("active");
 			  var panel = this.nextElementSibling;
