@@ -35,7 +35,7 @@
 /************************************************************************/
 var __webpack_exports__ = {};
 /*!*************************************************!*\
-  !*** ./src/rprofiler/rprofiler.ts + 30 modules ***!
+  !*** ./src/rprofiler/rprofiler.ts + 31 modules ***!
   \*************************************************/
 // ESM COMPAT FLAG
 __webpack_require__.r(__webpack_exports__);
@@ -1389,6 +1389,7 @@ var PostData = /** @class */ (function (_super) {
                 obj['frc'] = this.frc;
                 obj['fec'] = this.fec;
                 obj['fdc'] = this.fdc;
+                obj['ftc'] = this.ftc;
                 if (this.secureConnect) {
                     obj['sc'] = this.secureConnect;
                 }
@@ -1415,17 +1416,21 @@ var PostData = /** @class */ (function (_super) {
             obj['fid'] = this.firstInputDelay;
             obj['vct'] = this.visComplete;
             obj['fid'] = this.firstInputDelay;
-            obj['frc'] = this.frc;
-            obj['fec'] = this.fec;
-            obj['fdc'] = this.fdc;
             if (!isSoftNavigation) {
                 obj['fp'] = this.firstPaint;
                 obj['fcp'] = this.firstContentPaint;
                 obj['cls'] = this.cls;
                 obj['lcp'] = this.lcp;
                 obj['inp'] = this.inp;
+                obj['frc'] = this.frc;
+                obj['fec'] = this.fec;
+                obj['fdc'] = this.fdc;
+                obj['ftc'] = this.ftc;
                 obj['inpDe'] = this.inpDe;
             }
+        }
+        if (type === PostType.OnBeforeUnload || type === PostType.OnAbort) {
+            obj['rqc'] = this.rqc;
         }
         return obj;
     };
@@ -1977,6 +1982,7 @@ var DataProvider = /** @class */ (function () {
                     _this.setClearResources();
                     if (config.config.clearResources && config.pageWindow.performance.clearResourceTimings) {
                         postObj.resources = arr;
+                        postObj.rqc = arr.length;
                         config.pageWindow.performance.clearResourceTimings();
                     }
                     else {
@@ -2274,7 +2280,6 @@ var DataProvider = /** @class */ (function () {
         }
         if ((_a = config === null || config === void 0 ? void 0 : config.profiler) === null || _a === void 0 ? void 0 : _a.getCPWebVitals) {
             var cpWebVitals = config.profiler.getCPWebVitals();
-            console.log(cpWebVitals);
             if (cpWebVitals.cls) {
                 postObj.cls = cpWebVitals.cls;
             }
@@ -2306,6 +2311,7 @@ var DataProvider = /** @class */ (function () {
                 postObj.frc = cpFrustrationMetrics.frc;
                 postObj.fec = cpFrustrationMetrics.fec;
                 postObj.fdc = cpFrustrationMetrics.fdc;
+                postObj.ftc = cpFrustrationMetrics.ftc;
             }
         }
         return postObj;
@@ -3053,7 +3059,7 @@ var RageClick = /** @class */ (function () {
         this.clickCount = 0;
         this.rageClickLimit = 3;
         this.timeoutDuration = 1000; // milliseconds
-        this.rageClickValue = 0;
+        this.rageClickValue = null;
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     RageClick.prototype.startListening = function (_event) {
@@ -3091,7 +3097,7 @@ var rageClick = new RageClick();
 var ErrorClick = /** @class */ (function () {
     function ErrorClick() {
         this.error = '';
-        this.errorClickValue = 0;
+        this.errorClickValue = null;
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     ErrorClick.prototype.startListening = function (_event) {
@@ -3131,7 +3137,7 @@ var DeadClick = /** @class */ (function () {
     function DeadClick() {
         this.clickCounts = {};
         this.deadClickLimit = 2;
-        this.deadClickValue = 0;
+        this.deadClickValue = null;
         this.timeoutDuration = 1000; // milliseconds
     }
     DeadClick.prototype.getDeadClick = function () {
@@ -3157,7 +3163,61 @@ var DeadClick = /** @class */ (function () {
 }());
 var deadClick = new DeadClick();
 
+;// CONCATENATED MODULE: ./src/frustrationMetrics/ThrashedCursor.ts
+/**
+ * Detect mouse shake
+ *
+ * Mouse shaking is when users erratically move their cursor back and forth.
+ * Rapidly moving the cursor over a page can indicate
+ * the user is getting exasperated with some aspect of their experience.
+ * Perhaps the site performance is slow or they are struggling to figure something out.
+ *
+ */
+var ThrashedCursor = /** @class */ (function () {
+    function ThrashedCursor() {
+        var _this = this;
+        this.mouseMoveListener = function (event) {
+            var nextDirection = Math.sign(event.movementX);
+            _this.distance += Math.abs(event.movementX) + Math.abs(event.movementY);
+            if (nextDirection !== _this.direction) {
+                _this.direction = nextDirection;
+                _this.directionChangeCount++;
+            }
+        };
+        this.directionChangeCount = 0;
+        this.distance = 0;
+        this.interval = 350;
+        this.threshold = 0.01;
+        this.thrashedCursorValue = false;
+        var intervalClear = setInterval(function () {
+            var nextVelocity = _this.distance / _this.interval;
+            if (!_this.velocity) {
+                _this.velocity = nextVelocity;
+                return;
+            }
+            var acceleration = (nextVelocity - _this.velocity) / _this.interval;
+            if (_this.directionChangeCount && acceleration > _this.threshold) {
+                // clearing the interval after detecting thrashed cursor
+                clearInterval(intervalClear);
+                _this.thrashedCursorValue = true;
+            }
+            _this.distance = 0;
+            _this.directionChangeCount = 0;
+            _this.velocity = nextVelocity;
+        }, this.interval);
+    }
+    ThrashedCursor.prototype.getThrashedCursor = function () {
+        return this.thrashedCursorValue;
+    };
+    ThrashedCursor.prototype.startListening = function (event) {
+        this.mouseMoveListener(event);
+    };
+    return ThrashedCursor;
+}());
+var thrashedCursor = new ThrashedCursor();
+
 ;// CONCATENATED MODULE: ./src/frustrationMetrics/FrustrationMetrics.ts
+
 
 
 
@@ -3169,11 +3229,20 @@ var FrustrationMetrics = /** @class */ (function () {
         errorClick.startListening(event);
         deadClick.startListening(event);
     };
+    FrustrationMetrics.prototype.listenMouseMove = function (event) {
+        thrashedCursor.startListening(event);
+    };
     FrustrationMetrics.prototype.startListeningClickEvent = function () {
         window.addEventListener('click', this.listenClickEvent.bind(this));
     };
     FrustrationMetrics.prototype.stopListeningClickEvent = function () {
         window.removeEventListener('click', this.listenClickEvent.bind(this));
+    };
+    FrustrationMetrics.prototype.startListeningMouseMove = function () {
+        window.addEventListener('mousemove', this.listenMouseMove.bind(this));
+    };
+    FrustrationMetrics.prototype.stopListeningMouseMove = function () {
+        window.removeEventListener('mousemove', this.listenMouseMove.bind(this));
     };
     return FrustrationMetrics;
 }());
@@ -3191,6 +3260,7 @@ var rprofiler_assign = (undefined && undefined.__assign) || function () {
     };
     return rprofiler_assign.apply(this, arguments);
 };
+
 
 
 
@@ -3243,25 +3313,27 @@ var RProfiler = /** @class */ (function () {
         // Value being used instead delta as metricValue, Delta provide single value and value is for overall value.
         this.setINP = function (_a) {
             var metricName = _a.name, metricValue = _a.value, attribution = _a.attribution;
+            var goodInpValue = 200;
             if (metricName === 'INP') {
                 _this.inp = metricValue;
                 // we want to capture only the INP values greater than 200ms as 200-500 is needs improvement and 500+ is poor.
-                if (metricValue >= 200) {
+                if (metricValue > goodInpValue) {
                     var eventParams = {
                         t: attribution.interactionTarget,
-                        eTy: attribution.entryType, // find where can we get event type like in old version
+                        eTy: attribution.interactionType,
                         sTi: main_Util.getRoundedValue(attribution.interactionTime),
                         indl: main_Util.getRoundedValue(attribution.inputDelay),
                         psdu: main_Util.getRoundedValue(attribution.processingDuration),
                         prdl: main_Util.getRoundedValue(attribution.presentationDelay),
-                        v: main_Util.getRoundedValue(metricValue),
+                        val: main_Util.getRoundedValue(metricValue),
                         ls: attribution.loadState
                     };
+                    _this.inpDe.push(rprofiler_assign({}, eventParams));
+                    _this.inpDe.sort(function (a, b) { return b.val - a.val; });
                     // we want to send top 10 elements with INP values greater than 200ms
                     if (_this.inpDe.length === 10) {
-                        _this.inpDe.shift();
+                        _this.inpDe.pop();
                     }
-                    _this.inpDe.push(rprofiler_assign({}, eventParams));
                 }
             }
         };
@@ -3341,7 +3413,8 @@ var RProfiler = /** @class */ (function () {
             return {
                 frc: rageClick.getRageClick(),
                 fec: errorClick.getErrorClick(),
-                fdc: deadClick.getDeadClick()
+                fdc: deadClick.getDeadClick(),
+                ftc: thrashedCursor.getThrashedCursor()
             };
         };
         this.eventManager.add(WindowEvent.Load, window, this.recordPageLoad);
@@ -3352,6 +3425,7 @@ var RProfiler = /** @class */ (function () {
         rt(this.setINP, { reportAllChanges: true });
         // Frustration event
         frustrationMetrics.startListeningClickEvent();
+        frustrationMetrics.startListeningMouseMove();
         function recordJsError(e) {
             var ev = e.target || e.srcElement;
             if (ev.nodeType == 3) {
