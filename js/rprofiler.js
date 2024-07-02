@@ -80,6 +80,8 @@ var Metrics;
     Metrics[Metrics["Redirect"] = 5] = "Redirect";
     Metrics[Metrics["Duration"] = 6] = "Duration";
     Metrics[Metrics["SSL"] = 7] = "SSL";
+    Metrics[Metrics["TransferSize"] = 8] = "TransferSize";
+    Metrics[Metrics["RequestType"] = 9] = "RequestType";
 })(Metrics || (Metrics = {}));
 var CookieIdentifier;
 (function (CookieIdentifier) {
@@ -102,6 +104,13 @@ var WinHttpMethod;
     WinHttpMethod[WinHttpMethod["TRACE"] = 6] = "TRACE";
     WinHttpMethod[WinHttpMethod["CONNECT"] = 7] = "CONNECT";
 })(WinHttpMethod || (WinHttpMethod = {}));
+var RequestType;
+(function (RequestType) {
+    RequestType[RequestType["XMLHttpRequest"] = 1] = "XMLHttpRequest";
+    RequestType[RequestType["SVG"] = 2] = "SVG";
+    RequestType[RequestType["Image"] = 3] = "Image";
+    RequestType[RequestType["Script"] = 4] = "Script";
+})(RequestType || (RequestType = {}));
 
 ;// CONCATENATED MODULE: ./src/rprofiler/AjaxTiming.ts
 var AjaxTiming = /** @class */ (function () {
@@ -752,7 +761,7 @@ var MainConfig = /** @class */ (function () {
         sampleRate: -999, // range [0 - 100]
         waterfallSampleRate: -888, // range [0 - 100]
         postUrl: _f.protocol + 'lst01a.3genlabs.net/hawklogserver/r.p',
-        siteId: 1826,
+        siteId: 59,
         debugParameter: 'GlimpseDebug',
         debugUrl: 'localhost:44394/jp/v4.0.1/s.D',
         waterfallParameter: 'GlimpseWaterfall',
@@ -814,6 +823,40 @@ var DataWrapper = /** @class */ (function () {
 }());
 /* harmony default export */ const main_DataWrapper = (DataWrapper);
 
+;// CONCATENATED MODULE: ./src/utils.ts
+
+var extractImageUrl = function (backgroundImage) {
+    if (backgroundImage && backgroundImage.startsWith('url')) {
+        var match = backgroundImage.match(/url\(["']?([^"']*)["']?\)/);
+        var url = match && match.length > 1 && match[1];
+        if (url && !url.startsWith('data')) {
+            return url;
+        }
+    }
+    return null;
+};
+var getSelectorFromTarget = function (target) {
+    var className = target.className !== '' ? ".".concat(target.className) : '';
+    var targetId = target.id !== '' ? "#".concat(target.id) : '';
+    return [target.nodeName, className, targetId].join(' ');
+};
+var getRequestType = function (resource) {
+    if (resource.entryType === 'resource') {
+        switch (resource.initiatorType) {
+            case 'xmlhttprequest':
+                return RequestType.XMLHttpRequest;
+            case 'image':
+            case 'img':
+                return RequestType.Image;
+            case 'script':
+                return RequestType.Script;
+            default:
+                return null;
+        }
+    }
+    return null;
+};
+
 ;// CONCATENATED MODULE: ./src/main/Util.ts
 
 
@@ -842,6 +885,8 @@ var Util = /** @class */ (function () {
                     return allowOrigin ? resource.connectEnd - resource['secureConnectionStart'] : null;
                 }
                 break;
+            case Metrics.TransferSize:
+                return resource.transferSize;
         }
         return 0;
     };
@@ -896,6 +941,7 @@ var Util = /** @class */ (function () {
 ;// CONCATENATED MODULE: ./src/main/WaterfallItem.ts
 
 
+
 var WaterfallItem = /** @class */ (function () {
     function WaterfallItem(resource) {
         this.dns = null;
@@ -916,6 +962,8 @@ var WaterfallItem = /** @class */ (function () {
         this.duration = func(resource, Metrics.Duration);
         this.redirect = func(resource, Metrics.Redirect);
         this.ssl = func(resource, Metrics.SSL);
+        this.transferSize = func(resource, Metrics.TransferSize);
+        this.requestType = getRequestType(resource);
     }
     Object.defineProperty(WaterfallItem.prototype, "url", {
         get: function () {
@@ -972,6 +1020,8 @@ var WaterfallItem = /** @class */ (function () {
         setIfNumber('rd', roundedValue(this.redirect));
         setIfNumber('dr', roundedValue(this.duration));
         setIfNumber('ssl', roundedValue(this.ssl));
+        setIfNumber('ts', this.transferSize);
+        setIfNumber('ty', this.requestType);
         return obj;
     };
     return WaterfallItem;
@@ -2605,7 +2655,7 @@ var mainScript = function () { return __awaiter(void 0, void 0, void 0, function
                     var response, data;
                     return __generator(this, function (_a) {
                         switch (_a.label) {
-                            case 0: return [4 /*yield*/, fetch('https://localhost:44394/jp/1826/v4.0.1/s.AC')];
+                            case 0: return [4 /*yield*/, fetch('https://localhost:44394/jp/59/v4.0.1/s.AC')];
                             case 1:
                                 response = _a.sent();
                                 return [4 /*yield*/, response.json()];
@@ -2638,23 +2688,6 @@ var mainScript = function () { return __awaiter(void 0, void 0, void 0, function
     });
 }); };
 /* harmony default export */ const main = (mainScript);
-
-;// CONCATENATED MODULE: ./src/utils.ts
-var extractImageUrl = function (backgroundImage) {
-    if (backgroundImage && backgroundImage.startsWith('url')) {
-        var match = backgroundImage.match(/url\(["']?([^"']*)["']?\)/);
-        var url = match && match.length > 1 && match[1];
-        if (url && !url.startsWith('data')) {
-            return url;
-        }
-    }
-    return null;
-};
-var getSelectorFromTarget = function (target) {
-    var className = target.className !== '' ? ".".concat(target.className) : '';
-    var targetId = target.id !== '' ? "#".concat(target.id) : '';
-    return [target.nodeName, className, targetId].join(' ');
-};
 
 ;// CONCATENATED MODULE: ./src/visComplete.ts
 
@@ -3281,7 +3314,7 @@ var RProfiler = /** @class */ (function () {
         var _this = this;
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        this.restUrl = 'localhost:44394/jp/1826/v4.0.1/s.M';
+        this.restUrl = 'localhost:44394/jp/59/v4.0.1/s.M';
         this.startTime = new Date().getTime();
         this.eventsTimingHandler = new rprofiler_EventsTimingHandler();
         this.inputDelay = new rprofiler_InputDelayHandler();
