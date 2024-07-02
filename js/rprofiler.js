@@ -761,7 +761,7 @@ var MainConfig = /** @class */ (function () {
         sampleRate: -999, // range [0 - 100]
         waterfallSampleRate: -888, // range [0 - 100]
         postUrl: _f.protocol + 'lst01a.3genlabs.net/hawklogserver/r.p',
-        siteId: 59,
+        siteId: 1826,
         debugParameter: 'GlimpseDebug',
         debugUrl: 'localhost:44394/jp/v4.0.1/s.D',
         waterfallParameter: 'GlimpseWaterfall',
@@ -2655,7 +2655,7 @@ var mainScript = function () { return __awaiter(void 0, void 0, void 0, function
                     var response, data;
                     return __generator(this, function (_a) {
                         switch (_a.label) {
-                            case 0: return [4 /*yield*/, fetch('https://localhost:44394/jp/59/v4.0.1/s.AC')];
+                            case 0: return [4 /*yield*/, fetch('https://localhost:44394/jp/1826/v4.0.1/s.AC')];
                             case 1:
                                 response = _a.sent();
                                 return [4 /*yield*/, response.json()];
@@ -3314,7 +3314,7 @@ var RProfiler = /** @class */ (function () {
         var _this = this;
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        this.restUrl = 'localhost:44394/jp/59/v4.0.1/s.M';
+        this.restUrl = 'localhost:44394/jp/1826/v4.0.1/s.M';
         this.startTime = new Date().getTime();
         this.eventsTimingHandler = new rprofiler_EventsTimingHandler();
         this.inputDelay = new rprofiler_InputDelayHandler();
