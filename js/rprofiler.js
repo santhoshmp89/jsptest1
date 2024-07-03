@@ -823,40 +823,6 @@ var DataWrapper = /** @class */ (function () {
 }());
 /* harmony default export */ const main_DataWrapper = (DataWrapper);
 
-;// CONCATENATED MODULE: ./src/utils.ts
-
-var extractImageUrl = function (backgroundImage) {
-    if (backgroundImage && backgroundImage.startsWith('url')) {
-        var match = backgroundImage.match(/url\(["']?([^"']*)["']?\)/);
-        var url = match && match.length > 1 && match[1];
-        if (url && !url.startsWith('data')) {
-            return url;
-        }
-    }
-    return null;
-};
-var getSelectorFromTarget = function (target) {
-    var className = target.className !== '' ? ".".concat(target.className) : '';
-    var targetId = target.id !== '' ? "#".concat(target.id) : '';
-    return [target.nodeName, className, targetId].join(' ');
-};
-var getRequestType = function (resource) {
-    if (resource.entryType === 'resource') {
-        switch (resource.initiatorType) {
-            case 'xmlhttprequest':
-                return RequestType.XMLHttpRequest;
-            case 'image':
-            case 'img':
-                return RequestType.Image;
-            case 'script':
-                return RequestType.Script;
-            default:
-                return null;
-        }
-    }
-    return null;
-};
-
 ;// CONCATENATED MODULE: ./src/main/Util.ts
 
 
@@ -941,7 +907,6 @@ var Util = /** @class */ (function () {
 ;// CONCATENATED MODULE: ./src/main/WaterfallItem.ts
 
 
-
 var WaterfallItem = /** @class */ (function () {
     function WaterfallItem(resource) {
         this.dns = null;
@@ -963,7 +928,7 @@ var WaterfallItem = /** @class */ (function () {
         this.redirect = func(resource, Metrics.Redirect);
         this.ssl = func(resource, Metrics.SSL);
         this.transferSize = func(resource, Metrics.TransferSize);
-        this.requestType = getRequestType(resource);
+        // this.requestType = getRequestType(resource);
     }
     Object.defineProperty(WaterfallItem.prototype, "url", {
         get: function () {
@@ -1021,7 +986,7 @@ var WaterfallItem = /** @class */ (function () {
         setIfNumber('dr', roundedValue(this.duration));
         setIfNumber('ssl', roundedValue(this.ssl));
         setIfNumber('ts', this.transferSize);
-        setIfNumber('ty', this.requestType);
+        // setIfNumber('ty', this.requestType);
         return obj;
     };
     return WaterfallItem;
@@ -2688,6 +2653,40 @@ var mainScript = function () { return __awaiter(void 0, void 0, void 0, function
     });
 }); };
 /* harmony default export */ const main = (mainScript);
+
+;// CONCATENATED MODULE: ./src/utils.ts
+
+var extractImageUrl = function (backgroundImage) {
+    if (backgroundImage && backgroundImage.startsWith('url')) {
+        var match = backgroundImage.match(/url\(["']?([^"']*)["']?\)/);
+        var url = match && match.length > 1 && match[1];
+        if (url && !url.startsWith('data')) {
+            return url;
+        }
+    }
+    return null;
+};
+var getSelectorFromTarget = function (target) {
+    var className = target.className !== '' ? ".".concat(target.className) : '';
+    var targetId = target.id !== '' ? "#".concat(target.id) : '';
+    return [target.nodeName, className, targetId].join(' ');
+};
+var getRequestType = function (resource) {
+    if (resource.entryType === 'resource') {
+        switch (resource.initiatorType) {
+            case 'xmlhttprequest':
+                return RequestType.XMLHttpRequest;
+            case 'image':
+            case 'img':
+                return RequestType.Image;
+            case 'script':
+                return RequestType.Script;
+            default:
+                return null;
+        }
+    }
+    return null;
+};
 
 ;// CONCATENATED MODULE: ./src/visComplete.ts
 
