@@ -1,4 +1,4 @@
-
+/*
 /******/ (() => { // webpackBootstrap
 /******/ 	"use strict";
 /******/ 	// The require scope
@@ -3236,3 +3236,4 @@ profiler.dispatchCustomEvent('GlimpseLoaded');
 
 /******/ })()
 ;
+*/
