@@ -36,7 +36,7 @@
 /************************************************************************/
 var __webpack_exports__ = {};
 /*!*************************************************!*\
-  !*** ./src/rprofiler/rprofiler.ts + 31 modules ***!
+  !*** ./src/rprofiler/rprofiler.ts + 30 modules ***!
   \*************************************************/
 // ESM COMPAT FLAG
 __webpack_require__.r(__webpack_exports__);
@@ -590,95 +590,6 @@ var EventsTimingHandler = /** @class */ (function () {
 }());
 /* harmony default export */ var rprofiler_EventsTimingHandler = (EventsTimingHandler);
 
-;// CONCATENATED MODULE: ./src/rprofiler/InputDelayHandler.ts
-
-var InputDelayHandler = /** @class */ (function () {
-    function InputDelayHandler() {
-        var _this = this;
-        this.firstInputDelay = 0;
-        this.firstInputTimeStamp = 0;
-        this.startTime = 0;
-        this.delay = 0;
-        this.profileManager = new rprofiler_ProfilerEventManager();
-        this.eventTypes = ['click', 'mousedown', 'keydown', 'touchstart', 'pointerdown'];
-        this.addEventListeners = function () {
-            _this.eventTypes.forEach(function (event) {
-                _this.profileManager.add(event, document, _this.onInput);
-            });
-        };
-        this.now = function () {
-            return new Date().getTime();
-        };
-        this.removeEventListeners = function () {
-            _this.eventTypes.forEach(function (event) {
-                _this.profileManager.remove(event, document, _this.onInput);
-            });
-        };
-        this.onInput = function (evt) {
-            // Only count cancelable events, which should trigger behavior
-            if (!evt.cancelable) {
-                return;
-            }
-            // In some browsers `event.timeStamp` returns a `DOMTimeStamp` value
-            // (epoch time) istead of the newer `DOMHighResTimeStamp`
-            // (document-origin time). To check for that we assume any timestamp
-            // greater than 1 trillion is a `DOMTimeStamp`, and compare it using
-            var isEpochTime = evt.timeStamp > 1e12;
-            _this.firstInputTimeStamp = _this.now();
-            var useFirstInputTime = isEpochTime || !window['performance'];
-            var now = useFirstInputTime ? _this.firstInputTimeStamp : window['performance'].now();
-            _this.delay = now - evt.timeStamp;
-            if (evt.type == 'pointerdown') {
-                _this.onPointerDown();
-            }
-            else {
-                _this.removeEventListeners();
-                _this.updateFirstInputDelay();
-            }
-        };
-        this.onPointerUp = function () {
-            _this.removeEventListeners();
-            _this.updateFirstInputDelay();
-        };
-        this.onPointerCancel = function () {
-            _this.removePointerEventListeners();
-        };
-        this.removePointerEventListeners = function () {
-            _this.profileManager.remove('pointerup', document, _this.onPointerUp);
-            _this.profileManager.remove('pointercancel', document, _this.onPointerCancel);
-        };
-        this.updateFirstInputDelay = function () {
-            if (_this.delay >= 0 && _this.delay < _this.firstInputTimeStamp - _this.startTime) {
-                _this.firstInputDelay = Math.round(_this.delay);
-            }
-        };
-        this.startSoftNavigationCapture = function () {
-            _this.resetSoftNavigationCapture();
-        };
-        this.resetSoftNavigationCapture = function () {
-            _this.resetFirstInputDelay();
-            _this.addEventListeners();
-        };
-        this.resetFirstInputDelay = function () {
-            _this.delay = 0;
-            _this.firstInputDelay = 0;
-            _this.startTime = 0;
-            _this.firstInputTimeStamp = 0;
-        };
-        this.startTime = this.now();
-        this.addEventListeners();
-    }
-    InputDelayHandler.prototype.onPointerDown = function () {
-        this.profileManager.add('pointerup', document, this.onPointerUp);
-        this.profileManager.add('pointercancel', document, this.onPointerCancel);
-    };
-    InputDelayHandler.prototype.getFirstInputDelay = function () {
-        return this.firstInputDelay;
-    };
-    return InputDelayHandler;
-}());
-/* harmony default export */ var rprofiler_InputDelayHandler = (InputDelayHandler);
-
 ;// CONCATENATED MODULE: ./src/rprofiler/ProfilerJsError.ts
 var ProfilerJsError = /** @class */ (function () {
     function ProfilerJsError(message, url, lineNumber) {
@@ -757,14 +668,14 @@ var MainConfig = /** @class */ (function () {
     MainConfig.hasPerformanceApi = !!_f.pageWindow.performance && typeof _f.pageWindow.performance === 'object';
     MainConfig.hasGetEntriesApi = _f.hasPerformanceApi && typeof _f.pageWindow.performance.getEntriesByType === 'function';
     MainConfig.testUserId = "test";
-    MainConfig.version = 'v4.0.2';
+    MainConfig.version = 'v4.0.3';
     MainConfig.config = {
         sampleRate: -999, // range [0 - 100]
         waterfallSampleRate: -888, // range [0 - 100]
         postUrl: _f.protocol + 'lst01a.3genlabs.net/hawklogserver/r.p',
         siteId: 1826,
         debugParameter: 'GlimpseDebug',
-        debugUrl: 'portalstage.catchpoint.com/jp/v4.0.2/D',
+        debugUrl: 'portalstage.catchpoint.com/jp/v4.0.3/D',
         waterfallParameter: 'GlimpseWaterfall',
         sendOnLoad: false, // default is send onunload
         clearResources: true, // clear performance entries when we send data to core. using performance.clearResourceTimings()
@@ -1441,9 +1352,7 @@ var PostData = /** @class */ (function (_super) {
             obj['tti'] = this.timeToInteract;
             obj['et'] = this.engagementTime;
             obj['fet'] = this.firstEngagementTime;
-            obj['fid'] = this.firstInputDelay;
             obj['vct'] = this.visComplete;
-            obj['fid'] = this.firstInputDelay;
             if (!isSoftNavigation) {
                 obj['fp'] = this.firstPaint;
                 obj['fcp'] = this.firstContentPaint;
@@ -2061,9 +1970,6 @@ var DataProvider = /** @class */ (function () {
                 postObj.timeOnPage = _this.getTimeOnPage(isSoftNavigation);
                 postObj.firstEngagementTime = _this.getFirstEngagementTime(isSoftNavigation);
             }
-            if (config.profiler.getInputDelay) {
-                postObj.firstInputDelay = config.profiler.getInputDelay().getFirstInputDelay();
-            }
         };
         this.getFirstEngagementTime = function (isSoftNavigation) {
             var navigationStart = _this.getNavigationStart(isSoftNavigation);
@@ -2191,9 +2097,7 @@ var DataProvider = /** @class */ (function () {
                 _this.softNavigationStart = config.now();
                 if (config.profiler.getEventTimingHandler) {
                     var handler = config.profiler.getEventTimingHandler();
-                    var inputHandler = config.profiler.getInputDelay();
                     handler.startSoftNavigationCapture();
-                    inputHandler.startSoftNavigationCapture();
                     handler.resetSoftNavigationCapture();
                 }
             }, 0);
@@ -2633,7 +2537,7 @@ var mainScript = function () { return __awaiter(void 0, void 0, void 0, function
                     var response, data;
                     return __generator(this, function (_a) {
                         switch (_a.label) {
-                            case 0: return [4 /*yield*/, fetch('https://portalstage.catchpoint.com/jp/1826/v4.0.2/AC')];
+                            case 0: return [4 /*yield*/, fetch('https://portalstage.catchpoint.com/jp/1826/v4.0.3/AC')];
                             case 1:
                                 response = _a.sent();
                                 return [4 /*yield*/, response.json()];
@@ -3303,18 +3207,16 @@ var rprofiler_assign = (undefined && undefined.__assign) || function () {
 
 
 
-
 var RProfiler = /** @class */ (function () {
     function RProfiler() {
         var _this = this;
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        this.restUrl = 'portalstage.catchpoint.com/jp/1826/v4.0.2/M';
+        this.restUrl = 'portalstage.catchpoint.com/jp/1826/v4.0.3/M';
         this.startTime = new Date().getTime();
         this.eventsTimingHandler = new rprofiler_EventsTimingHandler();
-        this.inputDelay = new rprofiler_InputDelayHandler();
         this.inpDe = [];
-        this.version = 'v4.0.2'; //version number of inline script
+        this.version = 'v4.0.3'; //version number of inline script
         this.info = {};
         this.hasInsight = false;
         this.data = {
@@ -3422,9 +3324,6 @@ var RProfiler = /** @class */ (function () {
         };
         this.getEventTimingHandler = function () {
             return _this.eventsTimingHandler;
-        };
-        this.getInputDelay = function () {
-            return _this.inputDelay;
         };
         this.getCPWebVitals = function () {
             D(_this.setCLS);
