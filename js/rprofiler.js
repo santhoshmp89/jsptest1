@@ -3277,20 +3277,16 @@ var calculateScore = function () {
 };
 var benchMarkScore = function () {
     var randomNumber = getRandomNumber(1, 100);
-    var hasLastMileResults = false;
-    var interval = null;
-    if (!hasLastMileResults) {
-        interval = setInterval(function () {
+    var intervalId = null;
+    if (!intervalId) {
+        intervalId = setInterval(function () {
             var _a;
             if (((_a = window === null || window === void 0 ? void 0 : window.lastMileResults) === null || _a === void 0 ? void 0 : _a.length) > 0) {
                 calculateScore();
-                hasLastMileResults = true;
-            } else {
-                clearInterval(interval);
+                clearInterval(intervalId);
             }
         }, 1000);
     }
-  
     if (randomNumber <= 60) {
         createDiv('BAD CONNECTION', 'red');
     }
