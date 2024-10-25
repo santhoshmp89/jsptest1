@@ -674,7 +674,7 @@ var MainConfig = /** @class */ (function () {
         postUrl: _f.protocol + 'lst01a.3genlabs.net/hawklogserver/r.p',
         siteId: 1826,
         debugParameter: 'GlimpseDebug',
-        debugUrl: 'https://portalstage.catchpoint.com/jp/v4.0.5/D',
+        debugUrl: 'portalstage.catchpoint.com/jp/v4.0.5/D',
         waterfallParameter: 'GlimpseWaterfall',
         sendOnLoad: false, // default is send onunload
         clearResources: true, // clear performance entries when we send data to core. using performance.clearResourceTimings()
@@ -3180,49 +3180,112 @@ var FrustrationMetrics = /** @class */ (function () {
 var frustrationMetrics = new FrustrationMetrics();
 
 ;// CONCATENATED MODULE: ./src/benchmark/benchmark.ts
+var __spreadArray = (undefined && undefined.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
+;
 function getRandomNumber(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 function createDiv(message, color) {
-    var div = document.createElement("div");
+    var div = document.createElement('div');
     div.textContent = message;
-    div.style.position = "fixed";
-    div.style.bottom = "10px";
-    div.style.right = "10px";
-    div.style.padding = "10px";
+    div.style.position = 'fixed';
+    div.style.bottom = '10px';
+    div.style.right = '10px';
+    div.style.padding = '10px';
     div.style.backgroundColor = color;
-    div.style.color = "white";
-    div.style.fontWeight = "bold";
-    div.style.borderRadius = "5px";
-    div.style.opacity = "0";
-    div.style.transition = "opacity 1s";
-    var dismissButton = document.createElement("button");
-    dismissButton.textContent = "X";
-    dismissButton.style.marginLeft = "10px";
-    dismissButton.style.backgroundColor = "transparent";
-    dismissButton.style.border = "none";
-    dismissButton.style.color = "white";
-    dismissButton.style.fontWeight = "bold";
-    dismissButton.style.cursor = "pointer";
+    div.style.color = 'white';
+    div.style.fontWeight = 'bold';
+    div.style.borderRadius = '5px';
+    div.style.opacity = '0';
+    div.style.transition = 'opacity 1s';
+    var dismissButton = document.createElement('button');
+    dismissButton.textContent = 'X';
+    dismissButton.style.marginLeft = '10px';
+    dismissButton.style.backgroundColor = 'transparent';
+    dismissButton.style.border = 'none';
+    dismissButton.style.color = 'white';
+    dismissButton.style.fontWeight = 'bold';
+    dismissButton.style.cursor = 'pointer';
     dismissButton.onclick = function () {
-        div.style.opacity = "0";
+        div.style.opacity = '0';
         setTimeout(function () { return div.remove(); }, 1000); // Wait for the fade-out transition to complete
     };
     div.appendChild(dismissButton);
     document.body.appendChild(div);
     // Trigger the fade-in effect
-    setTimeout(function () { return div.style.opacity = "1"; }, 0);
+    setTimeout(function () { return (div.style.opacity = '1'); }, 0);
 }
+var calculateScore = function () {
+    var _a;
+    var maxLatency = 200;
+    var totalScore = 0;
+    var lastMileScore = 0;
+    if ((_a = window === null || window === void 0 ? void 0 : window.lastMileResults) === null || _a === void 0 ? void 0 : _a.length) {
+        var _loop_1 = function (i) {
+            var prob1 = window.lastMileResults[i].singleObjectResult;
+            var prob2 = window.lastMileResults[i].singleObjectResult.tracePoints.rtts;
+            var prob2Latencies = prob2.map(function (entry) { return entry.singleObjectResult.waitTime; });
+            var latencies = __spreadArray([prob1.waitTime], prob2Latencies, true);
+            var failedRequests = (prob1.codeError > 0 ? 1 : 0) + prob2.filter(function (entry) { return entry.singleObjectResult.codeError > 0; }).length;
+            if (latencies.length > 0) {
+                var avgLatency = latencies.reduce(function (sum, value) { return sum + value; }, 0) / latencies.length;
+                var jitter = latencies.slice(1).map(function (latency, index) { return Math.abs(latency - latencies[index]); }).reduce(function (sum, value) { return sum + value; }, 0) / (latencies.length - 1 || 1);
+                var packetLoss = (failedRequests / (latencies.length + failedRequests)) * 100;
+                var score = 100;
+                score -= packetLoss * 0.5;
+                score -= (Math.min((avgLatency / maxLatency) * 100, 100)) * 0.2;
+                score -= (Math.min((jitter / maxLatency) * 100, 100)) * 0.3;
+                score = Math.max(0, Math.min(100, score));
+                totalScore += score;
+                lastMileScore++;
+            }
+            console.log(latencies);
+        };
+        for (var i = 0; i < window.lastMileResults.length; i++) {
+            _loop_1(i);
+        }
+        var combinedScore = lastMileScore > 0 ? Math.floor(totalScore / lastMileScore) : 0;
+        console.log(combinedScore);
+        // for (const domain in window.connectionTimes) {
+        //   const timings = window.connectionTimes[domain].filter(entry => !entry.failed); // not required 
+        //   const latencies = timings.map(entry => entry.duration); // waitTime 
+        //   const failedRequests = window.connectionTimes[domain].filter(entry => entry.failed).length; // codeError greater than zero 
+        //     if (latencies.length > 0) {
+        //         const avgLatency = latencies.reduce((sum, value) => sum + value, 0) / latencies.length;
+        //         const jitter = latencies.slice(1).map((latency, index) => Math.abs(latency - latencies[index])).reduce((sum, value) => sum + value, 0) / (latencies.length - 1 || 1);
+        //         const packetLoss = (failedRequests / (latencies.length + failedRequests)) * 100;
+        //         let score = 100;
+        //         score -= packetLoss * 0.5;
+        //         score -= (Math.min((avgLatency / maxLatency) * 100, 100)) * 0.2;
+        //         score -= (Math.min((jitter / maxLatency) * 100, 100)) * 0.3;
+        //         score = Math.max(0, Math.min(100, score));
+        //         totalScore += score;
+        //         lastMileScore++;
+        //     }
+        // }
+        // const combinedScore = lastMileScore > 0 ? Math.floor(totalScore / lastMileScore) : 0;
+        // console.log(`Combined Score for all domains: ${combinedScore}`);
+    }
+};
 var benchMarkScore = function () {
     var randomNumber = getRandomNumber(1, 100);
+    calculateScore();
     if (randomNumber <= 60) {
-        createDiv("BAD CONNECTION", "red");
+        createDiv('BAD CONNECTION', 'red');
     }
     else if (randomNumber <= 80) {
-        createDiv("UNSTABLE CONNECTION", "orange");
+        createDiv('UNSTABLE CONNECTION', 'orange');
     }
     else {
-        createDiv("GOOD CONNECTION", "green");
+        createDiv('GOOD CONNECTION', 'green');
     }
 };
 /* harmony default export */ var benchmark = (benchMarkScore);
@@ -3260,7 +3323,7 @@ var RProfiler = /** @class */ (function () {
         var _this = this;
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        this.restUrl = 'https://portalstage.catchpoint.com/jp/1826/v4.0.5/M';
+        this.restUrl = 'portalstage.catchpoint.com/jp/1826/v4.0.5/M';
         this.startTime = new Date().getTime();
         this.eventsTimingHandler = new rprofiler_EventsTimingHandler();
         this.inpDe = [];
