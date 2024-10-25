@@ -674,7 +674,7 @@ var MainConfig = /** @class */ (function () {
         postUrl: _f.protocol + 'lst01a.3genlabs.net/hawklogserver/r.p',
         siteId: 1826,
         debugParameter: 'GlimpseDebug',
-        debugUrl: 'localhost:44394/jp/v4.0.5/s.D',
+        debugUrl: 'portalstage.catchpoint.com/jp/v4.0.5/s.D',
         waterfallParameter: 'GlimpseWaterfall',
         sendOnLoad: false, // default is send onunload
         clearResources: true, // clear performance entries when we send data to core. using performance.clearResourceTimings()
@@ -2536,7 +2536,7 @@ var mainScript = function () { return __awaiter(void 0, void 0, void 0, function
                     var response, data;
                     return __generator(this, function (_a) {
                         switch (_a.label) {
-                            case 0: return [4 /*yield*/, fetch('https://localhost:44394/jp/1826/v4.0.5/s.AC')];
+                            case 0: return [4 /*yield*/, fetch('https://portalstage.catchpoint.com/jp/1826/v4.0.5/s.AC')];
                             case 1:
                                 response = _a.sent();
                                 return [4 /*yield*/, response.json()];
@@ -3190,9 +3190,6 @@ var __spreadArray = (undefined && undefined.__spreadArray) || function (to, from
     return to.concat(ar || Array.prototype.slice.call(from));
 };
 ;
-function getRandomNumber(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-}
 function createDiv(message, color) {
     var div = document.createElement('div');
     div.textContent = message;
@@ -3247,54 +3244,36 @@ var calculateScore = function () {
                 totalScore += score;
                 lastMileScore++;
             }
-            console.log(latencies);
         };
         for (var i = 0; i < window.lastMileResults.length; i++) {
             _loop_1(i);
         }
-        var combinedScore = lastMileScore > 0 ? Math.floor(totalScore / lastMileScore) : 0;
-        console.log(combinedScore);
-        // for (const domain in window.connectionTimes) {
-        //   const timings = window.connectionTimes[domain].filter(entry => !entry.failed); // not required 
-        //   const latencies = timings.map(entry => entry.duration); // waitTime 
-        //   const failedRequests = window.connectionTimes[domain].filter(entry => entry.failed).length; // codeError greater than zero 
-        //     if (latencies.length > 0) {
-        //         const avgLatency = latencies.reduce((sum, value) => sum + value, 0) / latencies.length;
-        //         const jitter = latencies.slice(1).map((latency, index) => Math.abs(latency - latencies[index])).reduce((sum, value) => sum + value, 0) / (latencies.length - 1 || 1);
-        //         const packetLoss = (failedRequests / (latencies.length + failedRequests)) * 100;
-        //         let score = 100;
-        //         score -= packetLoss * 0.5;
-        //         score -= (Math.min((avgLatency / maxLatency) * 100, 100)) * 0.2;
-        //         score -= (Math.min((jitter / maxLatency) * 100, 100)) * 0.3;
-        //         score = Math.max(0, Math.min(100, score));
-        //         totalScore += score;
-        //         lastMileScore++;
-        //     }
-        // }
-        // const combinedScore = lastMileScore > 0 ? Math.floor(totalScore / lastMileScore) : 0;
-        // console.log(`Combined Score for all domains: ${combinedScore}`);
+        console.log(lastMileScore > 0 ? Math.floor(totalScore / lastMileScore) : 0);
+        return lastMileScore > 0 ? Math.floor(totalScore / lastMileScore) : 0;
+    }
+};
+var addFloatingDiv = function (count) {
+    if (count <= 60) {
+        createDiv('BAD CONNECTION', 'red');
+    }
+    else if (count <= 80) {
+        createDiv('UNSTABLE CONNECTION', 'orange');
+    }
+    else {
+        createDiv('GOOD CONNECTION', 'green');
     }
 };
 var benchMarkScore = function () {
-    var randomNumber = getRandomNumber(1, 100);
     var intervalId = null;
     if (!intervalId) {
         intervalId = setInterval(function () {
             var _a;
             if (((_a = window === null || window === void 0 ? void 0 : window.lastMileResults) === null || _a === void 0 ? void 0 : _a.length) > 0) {
-                calculateScore();
+                var score = calculateScore();
+                addFloatingDiv(score);
                 clearInterval(intervalId);
             }
         }, 1000);
-    }
-    if (randomNumber <= 60) {
-        createDiv('BAD CONNECTION', 'red');
-    }
-    else if (randomNumber <= 80) {
-        createDiv('UNSTABLE CONNECTION', 'orange');
-    }
-    else {
-        createDiv('GOOD CONNECTION', 'green');
     }
 };
 /* harmony default export */ var benchmark = (benchMarkScore);
@@ -3332,7 +3311,7 @@ var RProfiler = /** @class */ (function () {
         var _this = this;
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        this.restUrl = 'localhost:44394/jp/1826/v4.0.5/s.M';
+        this.restUrl = 'portalstage.catchpoint.com/jp/1826/v4.0.5/s.M';
         this.startTime = new Date().getTime();
         this.eventsTimingHandler = new rprofiler_EventsTimingHandler();
         this.inpDe = [];
