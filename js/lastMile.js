@@ -792,13 +792,13 @@ function main() {
     if (document.readyState === 'complete') {
         runLastMileTests();
     }
-    // else {
-    //     document.onreadystatechange = function () {
-    //         if (document.readyState === 'complete') {
-    //             runLastMileTests();
-    //         }
-    //     };
-    // }
+    else {
+        document.onreadystatechange = function () {
+            if (document.readyState === 'complete') {
+                runLastMileTests();
+            }
+        };
+    }
 }
 // Initialize the global variable
 window.lastMileResults = null;
