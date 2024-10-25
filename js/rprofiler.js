@@ -3277,19 +3277,19 @@ var calculateScore = function () {
 };
 var benchMarkScore = function () {
     var randomNumber = getRandomNumber(1, 100);
-    var hasLastMileResults = true;
+    var hasLastMileResults = false;
     var interval = null;
-    if (hasLastMileResults) {
+    if (!hasLastMileResults) {
         interval = setInterval(function () {
             var _a;
             if (((_a = window === null || window === void 0 ? void 0 : window.lastMileResults) === null || _a === void 0 ? void 0 : _a.length) > 0) {
                 calculateScore();
-                hasLastMileResults = false;
-            }
-            else {
-                clearInterval(interval);
+                hasLastMileResults = true;
             }
         }, 1000);
+    }
+    else {
+        clearInterval(interval);
     }
     if (randomNumber <= 60) {
         createDiv('BAD CONNECTION', 'red');
