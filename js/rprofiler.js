@@ -3277,7 +3277,15 @@ var calculateScore = function () {
 };
 var benchMarkScore = function () {
     var randomNumber = getRandomNumber(1, 100);
-    calculateScore();
+    var interval = true;
+    if (interval) {
+        setInterval(function () {
+            if (window.lastMileResults.length > 0) {
+                calculateScore();
+                interval = false;
+            }
+        }, 1000);
+    }
     if (randomNumber <= 60) {
         createDiv('BAD CONNECTION', 'red');
     }
