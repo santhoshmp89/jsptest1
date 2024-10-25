@@ -3280,7 +3280,8 @@ var benchMarkScore = function () {
     var interval = true;
     if (interval) {
         setInterval(function () {
-            if (window.lastMileResults.length > 0) {
+            var _a;
+            if (((_a = window === null || window === void 0 ? void 0 : window.lastMileResults) === null || _a === void 0 ? void 0 : _a.length) > 0) {
                 calculateScore();
                 interval = false;
             }
