@@ -3189,7 +3189,6 @@ var __spreadArray = (undefined && undefined.__spreadArray) || function (to, from
     }
     return to.concat(ar || Array.prototype.slice.call(from));
 };
-;
 function createDiv(message, color) {
     var div = document.createElement('div');
     div.textContent = message;
@@ -3234,12 +3233,15 @@ var calculateScore = function () {
             var failedRequests = (prob1.codeError > 0 ? 1 : 0) + prob2.filter(function (entry) { return entry.singleObjectResult.codeError > 0; }).length;
             if (latencies.length > 0) {
                 var avgLatency = latencies.reduce(function (sum, value) { return sum + value; }, 0) / latencies.length;
-                var jitter = latencies.slice(1).map(function (latency, index) { return Math.abs(latency - latencies[index]); }).reduce(function (sum, value) { return sum + value; }, 0) / (latencies.length - 1 || 1);
+                var jitter = latencies
+                    .slice(1)
+                    .map(function (latency, index) { return Math.abs(latency - latencies[index]); })
+                    .reduce(function (sum, value) { return sum + value; }, 0) / (latencies.length - 1 || 1);
                 var packetLoss = (failedRequests / (latencies.length + failedRequests)) * 100;
                 var score = 100;
                 score -= packetLoss * 0.5;
-                score -= (Math.min((avgLatency / maxLatency) * 100, 100)) * 0.2;
-                score -= (Math.min((jitter / maxLatency) * 100, 100)) * 0.3;
+                score -= Math.min((avgLatency / maxLatency) * 100, 100) * 0.2;
+                score -= Math.min((jitter / maxLatency) * 100, 100) * 0.3;
                 score = Math.max(0, Math.min(100, score));
                 totalScore += score;
                 lastMileScore++;
@@ -3271,10 +3273,10 @@ var addScroreToIndicator = function (score) {
     };
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
-    window.RProfiler ? init() : window.addEventListener("GlimpseLoaded", init);
+    window.RProfiler ? init() : window.addEventListener('GlimpseLoaded', init);
 };
 var addScroreToTracepoint = function (score) {
-    var scoreText = (score <= 60) ? 'BAD CONNECTION' : (score <= 80) ? 'UNSTABLE CONNECTION' : 'GOOD CONNECTION';
+    var scoreText = score <= 60 ? 'BAD CONNECTION' : score <= 80 ? 'UNSTABLE CONNECTION' : 'GOOD CONNECTION';
     var init = function () {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
@@ -3282,7 +3284,7 @@ var addScroreToTracepoint = function (score) {
     };
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
-    window.RProfiler ? init() : window.addEventListener("GlimpseLoaded", init);
+    window.RProfiler ? init() : window.addEventListener('GlimpseLoaded', init);
 };
 var benchMarkScore = function () {
     var intervalId = null;
@@ -3558,13 +3560,15 @@ if (document.readyState === 'complete') {
     src_visComplete();
 }
 else {
-    document.onreadystatechange = function () {
-        if (document.readyState === 'complete') {
+    document.addEventListener("readystatechange", function (event) {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        if (event.target.readyState === 'complete') {
             config.initValues();
             main();
             src_visComplete();
         }
-    };
+    });
 }
 benchmark();
 profiler.dispatchCustomEvent('GlimpseLoaded');
