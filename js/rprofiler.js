@@ -3285,12 +3285,12 @@ var benchMarkScore = function () {
             if (((_a = window === null || window === void 0 ? void 0 : window.lastMileResults) === null || _a === void 0 ? void 0 : _a.length) > 0) {
                 calculateScore();
                 hasLastMileResults = true;
+            } else {
+                clearInterval(interval);
             }
         }, 1000);
     }
-    else {
-        clearInterval(interval);
-    }
+  
     if (randomNumber <= 60) {
         createDiv('BAD CONNECTION', 'red');
     }
