@@ -3269,7 +3269,7 @@ var addScroreToIndicator = function (score) {
     var init = function () {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        window.RProfiler.addInfo('indicator', 'LastMile', score);
+        window.RProfiler.addInfo('indicator', 'LM-Indicator', score);
     };
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
@@ -3280,7 +3280,7 @@ var addScroreToTracepoint = function (score) {
     var init = function () {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        window.RProfiler.addInfo('tracepoint', 'LastMile-Tracepoint', scoreText);
+        window.RProfiler.addInfo('tracepoint', 'LM-Tracepoint', scoreText);
     };
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
