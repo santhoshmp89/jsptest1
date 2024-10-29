@@ -219,12 +219,12 @@ var configUrl = 'https://lst01a.3genlabs.net/hawklogserver/l.p';
 var resultsUrl = 'https://lst01a.3genlabs.net/hawklogserver/rl.p';
 // TEMPORARY
 var siteType = 2;
-// var divisionId = 4323;
-// var licenseKey = 'b3a04a8473af473d8e52dba61146ba3f';
+var divisionId = 4323;
+var licenseKey = 'b3a04a8473af473d8e52dba61146ba3f';
 //const divisionId = 3081;
 //const licenseKey = '5c13378d7dff44c99bb0e65df91e158a';
-var divisionId = 4258;
-var licenseKey = '337f894d523449c08ef6cb1103961997';
+// var divisionId = 4258;
+// var licenseKey = '337f894d523449c08ef6cb1103961997';
 //let currentTime;
 function getUTCTimestamp() {
     var now = new Date();
