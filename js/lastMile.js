@@ -4,7 +4,7 @@
 
 /***/ "./src/lastmile/LastMileApi.ts":
 /*!*************************************************!*\
-  !*** ./src/lastmile/LastMileApi.ts + 5 modules ***!
+  !*** ./src/lastmile/LastMileApi.ts + 4 modules ***!
   \*************************************************/
 /***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
 
@@ -18,15 +18,9 @@ __webpack_require__.d(__webpack_exports__, {
   postResults: function() { return /* binding */ postResults; },
   requestTest: function() { return /* binding */ requestTest; },
   runCustomTest: function() { return /* binding */ runCustomTest; },
+  runSyntheticPingTest: function() { return /* binding */ runSyntheticPingTest; },
   runSyntheticTests: function() { return /* binding */ runSyntheticTests; }
 });
-
-;// CONCATENATED MODULE: ./src/lastmile/AvailableMonitorType.ts
-var AvailableMonitorType;
-(function (AvailableMonitorType) {
-    AvailableMonitorType[AvailableMonitorType["SyntheticNodeSingleObject"] = 2] = "SyntheticNodeSingleObject";
-    AvailableMonitorType[AvailableMonitorType["SyntheticNodePing"] = 8] = "SyntheticNodePing";
-})(AvailableMonitorType || (AvailableMonitorType = {}));
 
 ;// CONCATENATED MODULE: ./src/lastmile/ConfigRequest.ts
 var ConfigRequest = /** @class */ (function () {
@@ -79,6 +73,7 @@ var LastMileResult = /** @class */ (function () {
     function LastMileResult() {
         this.siteId = 0;
         this.monitorType = 0;
+        this.testStartTime = 0;
         this.singleObjectResult = {
             url: '',
             connectTime: 0,
@@ -96,10 +91,10 @@ var LastMileResult = /** @class */ (function () {
         };
     }
     LastMileResult.prototype.toString = function () {
-        var config = this.prepareResult();
+        var config = this.prepareResultForCore();
         return JSON.stringify(config);
     };
-    LastMileResult.prototype.prepareResult = function () {
+    LastMileResult.prototype.prepareResultForCore = function () {
         var jsonConfig = new Object();
         jsonConfig['di'] = this.siteId;
         jsonConfig['m'] = this.monitorType;
@@ -218,7 +213,6 @@ var __generator = (undefined && undefined.__generator) || function (thisArg, bod
 
 
 
-
 // TODO: This would need to be dynamically generated based on environment (staging, qa, etc.)
 // same as how RUM does it. These should be log servers
 var configUrl = 'https://lst01a.3genlabs.net/hawklogserver/l.p';
@@ -231,7 +225,7 @@ var siteType = 2;
 //const licenseKey = '5c13378d7dff44c99bb0e65df91e158a';
 var divisionId = 4258;
 var licenseKey = '337f894d523449c08ef6cb1103961997';
-var currentTime;
+//let currentTime;
 function getUTCTimestamp() {
     var now = new Date();
     var year = now.getUTCFullYear();
@@ -306,7 +300,7 @@ function requestTest() {
         });
     });
 }
-function runSyntheticTests(testsToRun, runPing) {
+function runSyntheticTests(testsToRun) {
     return __awaiter(this, void 0, void 0, function () {
         var testPromises, testResults;
         var _this = this;
@@ -314,25 +308,40 @@ function runSyntheticTests(testsToRun, runPing) {
             switch (_a.label) {
                 case 0:
                     testPromises = testsToRun.map(function (test) { return __awaiter(_this, void 0, void 0, function () {
-                        var monitorType;
                         return __generator(this, function (_a) {
                             switch (_a.label) {
-                                case 0:
-                                    monitorType = test.m;
-                                    if (!runPing) return [3 /*break*/, 2];
-                                    return [4 /*yield*/, executeTest(test, runPingTest)];
+                                case 0: return [4 /*yield*/, executeTest(test, runSingleObjectTest)];
                                 case 1: return [2 /*return*/, _a.sent()];
-                                case 2:
-                                    if (!(AvailableMonitorType.SyntheticNodeSingleObject === monitorType)) return [3 /*break*/, 4];
-                                    return [4 /*yield*/, executeTest(test, runSingleObjectTest)];
-                                case 3: return [2 /*return*/, _a.sent()];
-                                case 4: return [2 /*return*/, null];
                             }
                         });
                     }); });
                     return [4 /*yield*/, Promise.all(testPromises)];
                 case 1:
                     testResults = _a.sent();
+                    return [2 /*return*/, testResults];
+            }
+        });
+    });
+}
+function runSyntheticPingTest(testsToRun) {
+    return __awaiter(this, void 0, void 0, function () {
+        var testResults, firstResult, secondResult;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    // Ping test is made of 2 separate tests
+                    if (testsToRun.length !== 2) {
+                        throw new Error("Running Ping Test requires 2 tests!");
+                    }
+                    testResults = [];
+                    return [4 /*yield*/, executeTest(testsToRun[0], runPingTest)];
+                case 1:
+                    firstResult = _a.sent();
+                    testResults.push(firstResult);
+                    return [4 /*yield*/, executeTest(testsToRun[1], runSingleObjectTest)];
+                case 2:
+                    secondResult = _a.sent();
+                    testResults.push(secondResult);
                     return [2 /*return*/, testResults];
             }
         });
@@ -371,6 +380,9 @@ function postResults(testResultsList) {
                         method: 'POST',
                         body: testResults.toString()
                     }); };
+                    if (0 === testResultsList.length) {
+                        console.warn('No results to post');
+                    }
                     postPromises = testResultsList.map(function (testResults) { return fetch(resultsUrl, options(testResults)); });
                     return [4 /*yield*/, Promise.all(postPromises)];
                 case 1:
@@ -400,7 +412,6 @@ function executeTest(test, testFunction) {
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 3, , 4]);
-                    currentTime = performance.now();
                     return [4 /*yield*/, testFunction(urlWithParams, test, results)];
                 case 2:
                     _a.sent();
@@ -416,19 +427,19 @@ function executeTest(test, testFunction) {
 }
 function runSingleObjectTest(urlToTest, test, results) {
     return __awaiter(this, void 0, void 0, function () {
-        var options, observer, observerPromise, response, statusCode;
+        var options, observer, entriesByName, observerPromise, currentTime, response, statusCode, error_3;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     options = {
                         method: 'GET'
                     };
+                    entriesByName = [];
                     observerPromise = new Promise(function (resolve, reject) {
                         observer = new PerformanceObserver(function (list) {
-                            var entriesByName = list.getEntriesByName(urlToTest);
+                            entriesByName = list.getEntriesByName(urlToTest);
                             if (entriesByName.length > 0) {
                                 observer.disconnect(); // stop observing
-                                getSingleObjectTestMetrics(entriesByName, test, results);
                                 resolve();
                             }
                         });
@@ -439,23 +450,44 @@ function runSingleObjectTest(urlToTest, test, results) {
                             reject(new Error('Observer timeout'));
                         }, 5000);
                     });
-                    return [4 /*yield*/, fetch(urlToTest, options)];
+                    observerPromise
+                        .then(function () {
+                        console.log('Resolved');
+                        getSingleObjectTestMetrics(entriesByName, test, results);
+                    })
+                        .catch(function (error) {
+                        console.error(error);
+                        getSingleObjectTestMetrics(entriesByName, test, results);
+                    });
+                    _a.label = 1;
                 case 1:
+                    _a.trys.push([1, 3, , 4]);
+                    currentTime = performance.now();
+                    return [4 /*yield*/, fetch(urlToTest, options)];
+                case 2:
                     response = _a.sent();
                     statusCode = response.status;
-                    return [4 /*yield*/, observerPromise];
-                case 2:
-                    _a.sent();
                     results.siteId = test.s;
                     results.monitorType = test.m;
+                    results.testStartTime = currentTime;
                     results.singleObjectResult.url = test.u;
                     results.singleObjectResult.tracePoints.pageUrl = getCurrentPageUrl();
                     console.log("Parent URL: ".concat(results.singleObjectResult.tracePoints.pageUrl));
                     // Set HTTP Status Code to the results
                     results.singleObjectResult.codeReturn = statusCode;
-                    if (statusCode >= HttpStatusCode.HttpBadRequest && statusCode <= HttpStatusCode.HttpVersionNotSupported) {
+                    if ((statusCode >= HttpStatusCode.HttpBadRequest && statusCode <= HttpStatusCode.HttpVersionNotSupported) ||
+                        statusCode == HttpStatusCode.None) {
                         results.singleObjectResult.codeError = AvailableRealUserWebNetworkError.HttpError;
                     }
+                    return [3 /*break*/, 4];
+                case 3:
+                    error_3 = _a.sent();
+                    console.log('Error running single object test');
+                    results.singleObjectResult.codeError = AvailableRealUserWebNetworkError.HttpError;
+                    return [3 /*break*/, 4];
+                case 4: return [4 /*yield*/, observerPromise];
+                case 5:
+                    _a.sent();
                     return [2 /*return*/];
             }
         });
@@ -463,14 +495,14 @@ function runSingleObjectTest(urlToTest, test, results) {
 }
 function runPingTest(urlToTest, test, results) {
     return __awaiter(this, void 0, void 0, function () {
-        var options, numberOfProbes, foundEntries, observer, observerPromise, response, statusCode, i, url, queryParams, urlWithParams, rttResponse, rttStatusCode, pingResult;
+        var options, numberOfProbes, foundEntries, observer, observerPromise, currentTime, response, statusCode, error_4, i, pingResult, url, queryParams, urlWithParams, rttResponse, rttStatusCode, error_5;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     options = {
-                        method: 'HEAD'
+                        method: 'GET'
                     };
-                    numberOfProbes = 5;
+                    numberOfProbes = 10;
                     foundEntries = [];
                     observerPromise = new Promise(function (resolve, reject) {
                         observer = new PerformanceObserver(function (list) {
@@ -479,7 +511,6 @@ function runPingTest(urlToTest, test, results) {
                             foundEntries.push.apply(foundEntries, entriesByName);
                             if (foundEntries.length > numberOfProbes) {
                                 observer.disconnect(); // stop observing
-                                getPingTestMetrics(foundEntries, test, results);
                                 resolve();
                             }
                         });
@@ -488,44 +519,88 @@ function runPingTest(urlToTest, test, results) {
                         setTimeout(function () {
                             observer.disconnect();
                             reject(new Error('Observer timeout'));
-                        }, 15000);
+                        }, 5000);
                     });
-                    return [4 /*yield*/, fetch(urlToTest, options)];
+                    observerPromise
+                        .then(function () {
+                        console.log('Resolved');
+                        observer.disconnect(); // stop observing
+                        getPingTestMetrics(foundEntries, test, results);
+                    })
+                        .catch(function (error) {
+                        console.error(error);
+                        observer.disconnect(); // stop observing
+                        getPingTestMetrics(foundEntries, test, results);
+                    });
+                    currentTime = 0;
+                    _a.label = 1;
                 case 1:
+                    _a.trys.push([1, 3, , 4]);
+                    console.log("Initial ping: ".concat(urlToTest, "      ").concat(test.s));
+                    currentTime = performance.now();
+                    return [4 /*yield*/, fetch(urlToTest, options)];
+                case 2:
                     response = _a.sent();
                     statusCode = response.status;
                     results.siteId = test.s;
                     results.monitorType = test.m;
+                    results.testStartTime = currentTime;
                     results.singleObjectResult.url = test.u;
                     results.singleObjectResult.tracePoints.pageUrl = getCurrentPageUrl();
                     // Set HTTP Status Code to the results
                     results.singleObjectResult.codeReturn = statusCode;
-                    if (statusCode >= HttpStatusCode.HttpBadRequest && statusCode <= HttpStatusCode.HttpVersionNotSupported) {
+                    if ((statusCode >= HttpStatusCode.HttpBadRequest && statusCode <= HttpStatusCode.HttpVersionNotSupported) ||
+                        statusCode == HttpStatusCode.None) {
                         results.singleObjectResult.codeError = AvailableRealUserWebNetworkError.HttpError;
                     }
+                    return [3 /*break*/, 4];
+                case 3:
+                    error_4 = _a.sent();
+                    console.log('Error running first ping');
+                    results.singleObjectResult.codeError = AvailableRealUserWebNetworkError.HttpError;
+                    return [3 /*break*/, 4];
+                case 4:
                     i = 0;
-                    _a.label = 2;
-                case 2:
-                    if (!(i < numberOfProbes)) return [3 /*break*/, 5];
+                    pingResult = null;
+                    i = 0;
+                    _a.label = 5;
+                case 5:
+                    if (!(i < numberOfProbes)) return [3 /*break*/, 11];
+                    _a.label = 6;
+                case 6:
+                    _a.trys.push([6, 8, , 9]);
+                    console.log("Running ping ".concat(i, " for test ").concat(test.s));
                     url = test.u;
                     queryParams = { rand: "".concat(getRandomInt()) };
                     urlWithParams = appendQueryParams(url, queryParams);
+                    currentTime = performance.now();
                     return [4 /*yield*/, fetch(urlWithParams, options)];
-                case 3:
+                case 7:
                     rttResponse = _a.sent();
                     rttStatusCode = rttResponse.status;
                     pingResult = new LastMileResult();
                     pingResult.singleObjectResult.codeReturn = rttStatusCode;
-                    if (statusCode >= HttpStatusCode.HttpBadRequest && rttStatusCode <= HttpStatusCode.HttpVersionNotSupported) {
+                    pingResult.testStartTime = currentTime;
+                    if ((rttStatusCode >= HttpStatusCode.HttpBadRequest && rttStatusCode <= HttpStatusCode.HttpVersionNotSupported) ||
+                        rttStatusCode == HttpStatusCode.None) {
                         pingResult.singleObjectResult.codeError = AvailableRealUserWebNetworkError.HttpError;
                     }
+                    return [3 /*break*/, 9];
+                case 8:
+                    error_5 = _a.sent();
+                    console.log("Error running rtt probe ".concat(i, "}"));
+                    if (null === pingResult)
+                        pingResult = new LastMileResult();
+                    pingResult.singleObjectResult.codeError = AvailableRealUserWebNetworkError.HttpError;
+                    return [3 /*break*/, 9];
+                case 9:
                     results.singleObjectResult.tracePoints.rtts.push(pingResult);
-                    _a.label = 4;
-                case 4:
+                    _a.label = 10;
+                case 10:
                     i++;
-                    return [3 /*break*/, 2];
-                case 5: return [4 /*yield*/, observerPromise];
-                case 6:
+                    return [3 /*break*/, 5];
+                case 11: return [4 /*yield*/, observerPromise];
+                case 12:
                     _a.sent();
                     return [2 /*return*/];
             }
@@ -533,11 +608,14 @@ function runPingTest(urlToTest, test, results) {
     });
 }
 function getSingleObjectTestMetrics(entries, test, results) {
+    if (HttpStatusCode.None == results.singleObjectResult.codeReturn) {
+        console.warn("Invalid HTTP status. Possibly a CORS error. Aborting metric collection...");
+        return;
+    }
     var entry = entries[0];
-    console.log("URL: ".concat(entry.name));
+    console.log("URL: ".concat(entry.name, "      Test: ").concat(test.s));
     // Start real metrics
-    console.log('Start real metrics');
-    var startTime = Math.round(entry.startTime - currentTime);
+    var startTime = Math.round(entry.startTime - results.testStartTime);
     var dnsTime = Math.round(entry.domainLookupEnd - entry.domainLookupStart);
     var connectTime = Math.round(entry.connectEnd - entry.connectStart);
     var sslTime = entry.secureConnectionStart > 0 ? Math.round(entry.connectEnd - entry.secureConnectionStart) : 0;
@@ -563,15 +641,18 @@ function getSingleObjectTestMetrics(entries, test, results) {
     results.singleObjectResult.receiveTime = receiveTime;
 }
 function getPingTestMetrics(entries, test, results) {
+    if (HttpStatusCode.None == results.singleObjectResult.codeReturn) {
+        console.warn("Invalid HTTP status. Possibly a CORS error. Aborting metric collection...");
+        return;
+    }
     // Populate high level result.
     getSingleObjectTestMetrics(entries, test, results);
     var rttEntries = entries.slice(1);
     results.singleObjectResult.tracePoints.rtts.forEach(function (pingResult, index) {
-        if (pingResult.singleObjectResult.codeError !== AvailableRealUserWebNetworkError.HttpError &&
-            index < rttEntries.length) {
+        if (pingResult.singleObjectResult.codeError !== AvailableRealUserWebNetworkError.HttpError && index < rttEntries.length) {
             var entry = rttEntries[index];
-            console.log("RTT Entry Name: ".concat(entry.name));
-            var startTime = Math.round(entry.startTime - currentTime);
+            console.log("RTT Entry Name: ".concat(entry.name, "      Test: ").concat(test.s));
+            var startTime = Math.round(entry.startTime - pingResult.testStartTime);
             var dnsTime = Math.round(entry.domainLookupEnd - entry.domainLookupStart);
             var connectTime = Math.round(entry.connectEnd - entry.connectStart);
             var sslTime = entry.secureConnectionStart > 0 ? Math.round(entry.connectEnd - entry.secureConnectionStart) : 0;
@@ -697,7 +778,7 @@ var __webpack_exports__ = {};
 // ESM COMPAT FLAG
 __webpack_require__.r(__webpack_exports__);
 
-// EXTERNAL MODULE: ./src/lastmile/LastMileApi.ts + 5 modules
+// EXTERNAL MODULE: ./src/lastmile/LastMileApi.ts + 4 modules
 var LastMileApi = __webpack_require__("./src/lastmile/LastMileApi.ts");
 ;// CONCATENATED MODULE: ./src/lastmile/InitLastMile.ts
 var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
@@ -738,29 +819,72 @@ var __generator = (undefined && undefined.__generator) || function (thisArg, bod
 };
 
 var initLastMileScript = function () { return __awaiter(void 0, void 0, void 0, function () {
-    var scheduledTests, results, error_1;
     return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0:
-                _a.trys.push([0, 3, , 4]);
-                return [4 /*yield*/, LastMileApi.requestTest()];
-            case 1:
-                scheduledTests = _a.sent();
-                return [4 /*yield*/, LastMileApi.runSyntheticTests(scheduledTests, true)];
-            case 2:
-                results = _a.sent();
-                LastMileApi.postResults(results);
-                // store results in global
-                window.lastMileResults = results;
-                return [3 /*break*/, 4];
-            case 3:
-                error_1 = _a.sent();
-                console.error('CP Last Mile Error', error_1);
-                return [3 /*break*/, 4];
-            case 4: return [2 /*return*/];
+        try {
+            runLastMilePingTests();
         }
+        catch (error) {
+            console.error('CP Last Mile Error', error);
+        }
+        return [2 /*return*/];
     });
 }); };
+/*
+async function runLastMileSingleObjectTests() {
+    // Request tests from Core
+    const scheduledTests = await LastMileApi.requestTest();
+    const results = await LastMileApi.runSyntheticTests(scheduledTests, true);
+    LastMileApi.postResults(results);
+
+    // store results in global
+    window.lastMileResults = results;
+}
+*/
+function runLastMilePingTests() {
+    return __awaiter(this, void 0, void 0, function () {
+        var timestamp, scheduledTests, results, testIndex, subList, resultList;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    timestamp = LastMileApi.getUTCTimestamp();
+                    scheduledTests = [
+                        LastMileApi.createScheduledTest(2, 91949, 'https://ipulse.perflib.com/ipulse/ad/cp.com/creative/1p.gif', 2, timestamp),
+                        LastMileApi.createScheduledTest(2, 91950, 'https://ipulse.perflib.com/ipulse/ad/cp.com/creative/50.jpg', 2, timestamp),
+                        LastMileApi.createScheduledTest(2, 91951, 'https://jpulse.perflib.com/ipulse/ad/cp.com/creative/1p.gif', 2, timestamp),
+                        LastMileApi.createScheduledTest(2, 91952, 'https://jpulse.perflib.com/ipulse/ad/cp.com/creative/50.jpg', 2, timestamp),
+                        LastMileApi.createScheduledTest(2, 91953, 'https://kpulse.perflib.com/ipulse/ad/cp.com/creative/1p.gif', 2, timestamp),
+                        LastMileApi.createScheduledTest(2, 91954, 'https://kpulse.perflib.com/ipulse/ad/cp.com/creative/50.jpg', 2, timestamp),
+                        LastMileApi.createScheduledTest(2, 91955, 'https://lpulse.perflib.com/ipulse/ad/cp.com/creative/1p.gif', 2, timestamp),
+                        LastMileApi.createScheduledTest(2, 91956, 'https://lpulse.perflib.com/ipulse/ad/cp.com/creative/50.jpg', 2, timestamp)
+                    ];
+                    // Throw an exception if the scheduled test list is not even. This is because for ping, we require pairs of 2 tests.
+                    // One fetches the 1 packet file, and the next one fetches a larger file to wrap up the ping.
+                    if (0 !== scheduledTests.length % 2) {
+                        throw new Error('Even number of tests required for ping.');
+                    }
+                    results = [];
+                    testIndex = 0;
+                    _a.label = 1;
+                case 1:
+                    if (!(testIndex < scheduledTests.length)) return [3 /*break*/, 4];
+                    subList = scheduledTests.slice(testIndex, testIndex + 2);
+                    return [4 /*yield*/, LastMileApi.runSyntheticPingTest(subList)];
+                case 2:
+                    resultList = _a.sent();
+                    results.push.apply(results, resultList);
+                    _a.label = 3;
+                case 3:
+                    testIndex += 2;
+                    return [3 /*break*/, 1];
+                case 4:
+                    LastMileApi.postResults(results);
+                    // store results in global
+                    window.lastMileResults = results;
+                    return [2 /*return*/];
+            }
+        });
+    });
+}
 /* harmony default export */ var InitLastMile = (initLastMileScript);
 
 ;// CONCATENATED MODULE: ./src/lastmile/lastmile.ts
