@@ -366,7 +366,7 @@
       // function init() {
       //   window.runLastMileScript();
       // }
-      window.runLastMileScript ? window.runLastMileScript() : window.addEventListener("LastMileScriptReady", window.runLastMileScript);
+      window.runLastMileScript ? init() : window.addEventListener("LastMileScriptReady", init);
       // window.runLastMileScript ? window.runLastMileScript() : window.addEventListener("LastMileScriptReady", window.runLastMileScript)
       // window.runLastMileScript ?? window.runLastMileScript();
     </script>
