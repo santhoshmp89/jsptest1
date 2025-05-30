@@ -62,6 +62,10 @@ button3.addEventListener('click', function() {
 	addingNELHeader();	
 });
 
-window.addEventListener('pagehide', function () {
-    console.log('pagehide event fired');
+window.addEventListener('pagehide', function (e) {
+	if(e.persisted) {
+   		 console.log('pagehide event fired');
+	} else {
+		console.log('pagehide event fired');
+	}
 });
