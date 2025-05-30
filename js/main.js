@@ -67,5 +67,6 @@ window.addEventListener('pagehide', function (e) {
    		 console.log('pagehide event fired');
 	} else {
 		console.log('pagehide event fired');
-	}
+	},
+	{ capture: true }
 });
