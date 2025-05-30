@@ -66,4 +66,3 @@ window.addEventListener("pagehide", function (event) {
   console.log("Page is being hidden");
   console.log("Current URL:", window.location.href);
 });	
-}, { capture: true });
