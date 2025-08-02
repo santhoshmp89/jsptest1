@@ -9,6 +9,17 @@ var ajax = [
   'https://fonts.googleapis.com/css2?family=Roboto:wght@300&display=swap'
 ];
 
+class MyError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = '[custom]';
+  }
+
+  toString() {
+    return `[custom]: ${this.message}`;
+  }
+}
+
 function makeAjaxCall() {
 	ajax.forEach((a) => {
 		fetch(a)
@@ -24,7 +35,8 @@ const button = document.getElementById('button');
 
 function jsErrorFunc() {
 	console.log('function called')
-	throw new Error('[custom]', { cause: 'cardStateType:account_restrictions_portsumTimeout,startTime:******,endTime:******,roundTripTime:10092|Account_Restrictions'});
+	throw new MyError('cardStateType:account_restrictions_portsumTimeout,startTime:******,endTime:******,roundTripTime:10092|Account_Restrictions');
+	// throw new Error('[custom]', { cause: 'cardStateType:account_restrictions_portsumTimeout,startTime:******,endTime:******,roundTripTime:10092|Account_Restrictions'});
 };
 
 
