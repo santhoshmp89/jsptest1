@@ -24,7 +24,7 @@ const button = document.getElementById('button');
 
 function jsErrorFunc() {
 	console.log('function called')
-	throw new Error('test error');
+	throw new Error('[custom]:cardStateType:account_restrictions_portsumTimeout,startTime:******,endTime:******,roundTripTime:10092|Account_Restrictions');
 };
 
 
